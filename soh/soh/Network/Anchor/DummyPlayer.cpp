@@ -1,10 +1,15 @@
 #include "Anchor.h"
 #include "soh/Enhancements/nametag.h"
+#include <soh/Enhancements/mod_menu.h>
+#include <soh/resource/type/Skeleton.h>
+#include <objects/object_link_child/object_link_child.h>
+#include <objects/object_link_boy/object_link_boy.h>
 
 extern "C" {
 #include "macros.h"
 #include "variables.h"
 #include "functions.h"
+
 extern PlayState* gPlayState;
 
 void Player_UseItem(PlayState* play, Player* player, s32 item);
@@ -69,6 +74,18 @@ void DummyPlayer_Init(Actor* actor, PlayState* play) {
     Player_UseItem(play, player, ITEM_NONE);
     Player_SetModelGroup(player, Player_ActionToModelGroup(player, player->heldItemAction));
     play->playerInit(player, play, gPlayerSkelHeaders[client.linkAge]);
+
+    // Hack to register & manage custom skeletons
+    //i've shoved an empty value into slot 0 in ClientModeLoader.cpp so that the ui in AnchorRoomWindow is a bit less of a pain in the ass
+    //so yeah please don't try to load the model at index 0 because /alt/Default/objects/... will not exist :)
+    if ((client.altModelIndex > 0) && (client.altModelIndex < clientMods.size())) {
+        //do this once at init; hope they're wearing a tunic they like.
+        //instead of updating Skeleton to allow multiple models, we'll just do it here
+        std::string& mod = clientMods[client.altModelIndex];
+        std::string assetPath = mod + '/' + (client.linkAge == 0 ? std::string(gLinkAdultSkel).substr(7) : std::string(gLinkChildSkel).substr(7));
+        SOH::SkeletonPatchInfo actorSkelePatchInfo = SOH::SkeletonPatcher::RegisterSkeleton(assetPath, &player->skelAnime, true);
+        SOH::SkeletonPatcher::UpdateCustomSkeletonFromPath(assetPath, actorSkelePatchInfo);
+    }
 
     // Prevent dummy players from holding a weapon trail effect slot, as they don't use it anyway
     Effect_Delete(play, player->meleeWeaponEffectIndex);
@@ -222,7 +239,6 @@ void DummyPlayer_Update(Actor* actor, PlayState* play) {
 
 void DummyPlayer_Draw(Actor* actor, PlayState* play) {
     Player* player = (Player*)actor;
-
     uint32_t clientId = Anchor::Instance->GetDummyPlayerClientId(actor);
 
     if (!Anchor::Instance->clients.contains(clientId)) {

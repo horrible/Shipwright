@@ -1,13 +1,22 @@
 #include <algorithm>
 #include <cctype>
 #include <map>
+#include <functional>
 #include <set>
 #include <vector>
+#include <unordered_map>
 
 #include <ship/utils/StringHelper.h>
+#include <ship/utils/StrHash64.h>
 #include <ship/Context.h>
+#include <ship/resource/ResourceManager.h>
+#include <ship/resource/ResourceLoader.h>
+#include <ship/resource/archive/FolderArchive.h>
+#include <ship/resource/archive/O2rArchive.h>
+#include <ship/resource/archive/OtrArchive.h>
 
 #include "mod_menu.h"
+#include "soh/Network/Anchor/ClientModelLoader.h"
 #include "soh/Enhancements/audio/OotrsArchive.h"
 #include "soh/OTRGlobals.h"
 #include "soh/util.h"
@@ -228,6 +237,11 @@ void UpdateModFiles(bool init = false, bool reset = false) {
             for (const std::filesystem::directory_entry& p : std::filesystem::recursive_directory_iterator(
                      modsPath, std::filesystem::directory_options::follow_directory_symlink)) {
                 if (p.is_directory()) {
+                    //* start changes
+                    if (StringHelper::IEquals(p.path().filename().generic_string(), "anchor")) {
+                        populateClientModelList(p);
+                    }
+                    //end changes*/
                     continue;
                 }
                 std::string filename =
