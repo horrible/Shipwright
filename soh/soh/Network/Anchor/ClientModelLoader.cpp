@@ -29,18 +29,11 @@ uint64_t orderReferencesRecursively(
     std::set<std::string>& included,
     const std::shared_ptr<Ship::Archive>& root);
 
-extern "C" {
-#include "macros.h"
-#include "variables.h"
-#include "functions.h"
-extern PlayState* gPlayState;
-}
-
-std::vector<std::string> clientMods;
+std::vector<std::tuple<std::string, std::string, std::string>> clientMods;
 
 void populateClientModelList(std::filesystem::directory_entry p) {
     clientMods.clear();
-    clientMods.push_back("Default");
+    clientMods.push_back(std::make_tuple("Default", "objects/object_link_boy/gLinkAdultSkel", "objects/object_link_child/gLinkChildSkel"));
     // store full archive content under its own name for usage by anchor clients
     for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(p)) {
         std::string modName;
@@ -80,16 +73,21 @@ void populateClientModelList(std::filesystem::directory_entry p) {
                 }
             }
             if (validAnchor) {
-                clientMods.push_back(modName);
+                std::string modPrefix = Ship::IResource::gAltAssetPrefix + modName + '/';
+                std::vector<std::string> orderedReferences;
+                std::unordered_map<uint64_t, std::string> unorderedReferences = *archive->ListFiles();
+                unorderedReferences.erase(CRC64(""));
+                uint64_t numFiles = unorderedReferences.size();
+
+                clientMods.push_back(std::make_tuple(
+                    modName,
+                    modPrefix + "objects/object_link_boy/gLinkAdultSkel",
+                    modPrefix + "objects/object_link_child/gLinkChildSkel"));
 
                 //ensure all files are added before they're referenced because nobody likes missing bones
                 // i genuinely don't know if this is actually needed. i was having lots of problems loading models and it looked like it was missing shit during the load
                 // this fixed that, but idk if that was just logger noise and didn't actually matter
                 std::set<std::string> included; //because a set is easier to look at than a vector and probably faster
-                std::vector<std::string> orderedReferences;
-                std::unordered_map<uint64_t, std::string> unorderedReferences = *archive->ListFiles();
-                unorderedReferences.erase(CRC64(""));
-                uint64_t numFiles = unorderedReferences.size();
 
                 //while archive has unordered files
                 while ((orderedReferences.size() < numFiles) && (unorderedReferences.size() != 0)) {
@@ -120,7 +118,6 @@ void populateClientModelList(std::filesystem::directory_entry p) {
                     }
                 }
 
-                std::string modPrefix = Ship::IResource::gAltAssetPrefix + modName + '/';
 
                 //and, finally, add everything from first to last. maybe that's backwards but we'll find out when we exec
                 for (std::string filename : orderedReferences) {

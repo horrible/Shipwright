@@ -179,6 +179,9 @@ class Context {
     void SetHash(std::string hash);
     uint8_t GetBombchuCapacity();
     void HandleGetBombchuBag();
+    uint8_t& GetRocsFeatherCapacity();
+    uint8_t& GetRocsFeathersRemaining();
+    void HandleGetRocsFeather();
 
   private:
     static std::weak_ptr<Context> mContext;

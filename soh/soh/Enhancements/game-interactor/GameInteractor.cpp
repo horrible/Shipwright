@@ -114,6 +114,7 @@ bool GameInteractor::CanAddOrTakeAmmo(int16_t amount, int16_t item) {
         case ITEM_BOMB:
             upgradeToCheck = UPG_BOMB_BAG;
             break;
+        case ITEM_ROCS_FEATHER:
         default:
             break;
     }
@@ -122,14 +123,16 @@ bool GameInteractor::CanAddOrTakeAmmo(int16_t amount, int16_t item) {
         return false;
     }
 
-    if (item != ITEM_BOMBCHU && item != ITEM_BEAN) {
+    if (item != ITEM_BOMBCHU && item != ITEM_BEAN && item != ITEM_ROCS_FEATHER) {
         if ((CUR_CAPACITY(upgradeToCheck) == 0) || (amount > 0 && AMMO(item) == CUR_CAPACITY(upgradeToCheck))) {
             return false;
         }
         return true;
     } else {
         // Separate checks for beans and bombchus because they don't have capacity upgrades
-        if (INV_CONTENT(item) != item ||
+        if (item == ITEM_ROCS_FEATHER) {
+            return true;
+        } else if (INV_CONTENT(item) != item ||
             (amount > 0 && ((item == ITEM_BOMBCHU && AMMO(item) == 50) || (item == ITEM_BEAN && AMMO(item) == 10)))) {
             return false;
         }

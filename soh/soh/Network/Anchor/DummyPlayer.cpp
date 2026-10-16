@@ -1,6 +1,6 @@
 #include "Anchor.h"
+#include "ClientModelLoader.h"
 #include "soh/Enhancements/nametag.h"
-#include <soh/Enhancements/mod_menu.h>
 #include <soh/resource/type/Skeleton.h>
 #include <objects/object_link_child/object_link_child.h>
 #include <objects/object_link_boy/object_link_boy.h>
@@ -76,13 +76,10 @@ void DummyPlayer_Init(Actor* actor, PlayState* play) {
     play->playerInit(player, play, gPlayerSkelHeaders[client.linkAge]);
 
     // Hack to register & manage custom skeletons
-    //i've shoved an empty value into slot 0 in ClientModeLoader.cpp so that the ui in AnchorRoomWindow is a bit less of a pain in the ass
-    //so yeah please don't try to load the model at index 0 because /alt/Default/objects/... will not exist :)
-    if ((client.altModelIndex > 0) && (client.altModelIndex < clientMods.size())) {
-        //do this once at init; hope they're wearing a tunic they like.
-        //instead of updating Skeleton to allow multiple models, we'll just do it here
-        std::string& mod = clientMods[client.altModelIndex];
-        std::string assetPath = mod + '/' + (client.linkAge == 0 ? std::string(gLinkAdultSkel).substr(7) : std::string(gLinkChildSkel).substr(7));
+    if ((client.altModelIndex >= 0) && (client.altModelIndex < clientMods.size())) {
+        //update client Skeleton here
+        auto& [mod, adultSkel, childSkel] = clientMods[client.altModelIndex];
+        std::string assetPath = client.linkAge == 0 ? adultSkel : childSkel;
         SOH::SkeletonPatchInfo actorSkelePatchInfo = SOH::SkeletonPatcher::RegisterSkeleton(assetPath, &player->skelAnime, true);
         SOH::SkeletonPatcher::UpdateCustomSkeletonFromPath(assetPath, actorSkelePatchInfo);
     }

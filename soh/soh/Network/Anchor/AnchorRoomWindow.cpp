@@ -1,10 +1,10 @@
 #include <ship/window/gui/IconsFontAwesome4.h>
 
 #include "Anchor.h"
+#include "ClientModelLoader.h"
 #include "soh/OTRGlobals.h"
 #include "soh/util.h"
 #include "soh/Enhancements/randomizer/SeedContext.h"
-#include "soh/Enhancements/mod_menu.h"
 
 extern "C" {
 extern PlayState* gPlayState;
@@ -85,10 +85,10 @@ void AnchorRoomWindow::DrawElement() {
             }
             ImGui::SameLine();
             ImGui::BeginDisabled(client.self);
-            const char* selected_item = client.self ? "self (system-managed)" : clientMods[client.altModelIndex].c_str();
+            const char* selected_item = client.self ? "self (system-managed)" : std::get<0>(clientMods[client.altModelIndex]).c_str();
             if (ImGui::BeginCombo("##clientModSelector", selected_item)) {
                 for (size_t i = 0; i < clientMods.size(); i++) {
-                    const char* name = clientMods[i].c_str();
+                    const char* name = std::get<0>(clientMods[i]).c_str();
                     if (ImGui::Selectable(name, client.altModelIndex == i)) {
                         client.altModelIndex = (u8)i;
                     }

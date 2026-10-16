@@ -631,6 +631,43 @@ void Context::HandleGetBombchuBag() {
     }
 }
 
+uint8_t& Context::GetRocsFeatherCapacity() {
+    bool rocsConsumable = Rando::Context::GetInstance()->GetOption(RSK_ROCS_FEATHER).Is(RO_ROCS_FEATHER_CONSUMABLE);
+    static uint8_t& rocsMaxUse = mLogic->GetSaveContext()->ship.quest.data.randomizer.rocsFeathersAcquired;
+    static uint8_t& rocsRemaining = mLogic->GetSaveContext()->ship.quest.data.randomizer.rocsFeathersRemaining; 
+    
+    if (!rocsConsumable && rocsMaxUse == 0 && Flags_GetRandomizerInf(RAND_INF_OBTAINED_ROCS_FEATHER)) {
+        rocsMaxUse = 1;
+        rocsRemaining = 1;
+    }
+    return rocsMaxUse;
+}
+uint8_t& Context::GetRocsFeathersRemaining() {
+    return mLogic->GetSaveContext()->ship.quest.data.randomizer.rocsFeathersRemaining;
+}
+
+void Context::HandleGetRocsFeather() {
+    bool rocsConsumable = Rando::Context::GetInstance()->GetOption(RSK_ROCS_FEATHER).Is(RO_ROCS_FEATHER_CONSUMABLE);
+    static uint8_t& rocsMaxUse = mLogic->GetSaveContext()->ship.quest.data.randomizer.rocsFeathersAcquired;
+    static uint8_t& rocsRemaining = mLogic->GetSaveContext()->ship.quest.data.randomizer.rocsFeathersRemaining; 
+
+    if (rocsMaxUse == 0) {
+        Flags_SetRandomizerInf(RAND_INF_OBTAINED_ROCS_FEATHER);
+        rocsMaxUse = 0;
+        rocsRemaining = 0;
+    }
+
+    if (rocsConsumable) {
+        uint8_t maxFeathers = Rando::Context::GetInstance()->GetOption(RSK_ROCS_FEATHER_COUNT).Get();
+        rocsMaxUse = maxFeathers;
+        rocsRemaining = rocsRemaining < rocsMaxUse ? rocsRemaining + 1 : rocsMaxUse;
+
+    } else {
+        rocsMaxUse++;
+        rocsRemaining = rocsMaxUse;
+    }
+}
+
 const std::string& Context::GetSeedString() const {
     return mSeedString;
 }

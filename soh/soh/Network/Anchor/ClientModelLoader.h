@@ -1,6 +1,7 @@
 #pragma once
 
 #ifdef __cplusplus
+extern std::vector<std::tuple<std::string, std::string, std::string>> clientMods;
 
 #include <filesystem>
 #include "soh/Network/Network.h"
@@ -10,12 +11,6 @@
 #include <mutex>
 #include <list>
 
-extern "C" {
-#include "variables.h"
-#include "z64.h"
-}
-
 void populateClientModelList(std::filesystem::directory_entry p);
-
 
 #endif // __cplusplus

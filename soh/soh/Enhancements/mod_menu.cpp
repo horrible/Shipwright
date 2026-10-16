@@ -241,8 +241,13 @@ void UpdateModFiles(bool init = false, bool reset = false) {
                     if (StringHelper::IEquals(p.path().filename().generic_string(), "anchor")) {
                         populateClientModelList(p);
                     }
-                    //end changes*/
                     continue;
+                } else if (p.path().parent_path().generic_string().find("anchor") != std::string::npos) {
+
+                    std::size_t index = p.path().parent_path().generic_string().find("anchor");
+                    if (index > 4 && p.path().parent_path().generic_string().substr(index-5, 4) == "mods") {
+                        continue;
+                    }
                 }
                 std::string filename =
                     p.path().filename().generic_string().substr(0, p.path().filename().generic_string().rfind("."));

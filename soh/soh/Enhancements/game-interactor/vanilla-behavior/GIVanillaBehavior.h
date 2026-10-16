@@ -4150,4 +4150,7 @@ typedef enum {
     // - none
     VB_EMPTY_BOTTLE_OI,
 
+    // idk good luck see ItemInSlotUsesAmmo
+    VB_ITEM_USES_AMMO,
+
 } GIVanillaBehavior;

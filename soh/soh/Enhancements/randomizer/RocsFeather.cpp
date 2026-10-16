@@ -1,4 +1,5 @@
 #include "soh/Enhancements/game-interactor/GameInteractor.h"
+#include "soh/Enhancements/randomizer/SeedContext.h"
 #include "soh/ShipInit.hpp"
 
 extern "C" {
@@ -8,18 +9,27 @@ extern "C" {
 #include "variables.h"
 #include "macros.h"
 extern PlayState* gPlayState;
+extern SaveContext gSaveContext;
 }
 
 #define MAX_ROCS_USES 1
 
-static uint8_t rocsUseCount = 0;
+static uint8_t& rocsMaxUse = gSaveContext.ship.quest.data.randomizer.rocsFeathersAcquired;
+static uint8_t& rocsRemaining = gSaveContext.ship.quest.data.randomizer.rocsFeathersRemaining; 
 static uint8_t groundTimer = 0;
 static f32 effectsScale = 1.0f;
+static bool rocsConsumable = false;
+
 
 void RegisterRocsFeather() {
     // Always register hooks - they only activate when ITEM_ROCS_FEATHER is actually used
     // Rando-specific logic (item pool, accessibility, etc.) is handled elsewhere
     bool shouldRegister = true;
+
+
+    COND_HOOK(OnLoadFile, shouldRegister, [](int32_t fileNum) {
+        rocsConsumable = Rando::Context::GetInstance()->GetOption(RSK_ROCS_FEATHER).Is(RO_ROCS_FEATHER_CONSUMABLE);
+    });
 
     COND_HOOK(OnPlayerUpdate, shouldRegister, []() {
         Player* player = GET_PLAYER(gPlayState);
@@ -33,8 +43,8 @@ void RegisterRocsFeather() {
             groundTimer = 0;
         }
 
-        if (groundTimer >= 3) {
-            rocsUseCount = 0;
+        if (!rocsConsumable && groundTimer >= 3) {
+            rocsRemaining = rocsMaxUse;
         }
     });
 
@@ -45,8 +55,8 @@ void RegisterRocsFeather() {
         if (usedItem == ITEM_ROCS_FEATHER) {
             *should = false;
 
-            if (rocsUseCount < MAX_ROCS_USES) {
-                rocsUseCount++;
+            if (rocsRemaining > 0) {
+                rocsRemaining--;
 
                 Player* player = GET_PLAYER(gPlayState);
 
@@ -95,6 +105,41 @@ void RegisterRocsFeather() {
             }
 
             memcpy(gPlayState->pauseCtx.nameSegment, textureName, strlen(textureName) + 1);
+        }
+    });
+
+    COND_VB_SHOULD(VB_ITEM_USES_AMMO, shouldRegister, {
+        s16 item = *va_arg(args, s16*);
+        if (item == ITEM_ROCS_FEATHER) {
+            if (gSaveContext.ship.quest.data.randomizer.rocsFeathersAcquired > 1) {
+                *should = true;
+            } else {
+                *should = false;
+            }
+        }
+    });
+
+    COND_VB_SHOULD(VB_DRAW_AMMO_COUNT, shouldRegister, {
+        s16 item = *va_arg(args, s16*);
+        if (item == ITEM_ROCS_FEATHER) {
+            if (gSaveContext.ship.quest.data.randomizer.rocsFeathersAcquired > 1) {
+                *should = true;
+            } else {
+                *should = false;
+            }
+        }
+    });
+
+    COND_VB_SHOULD(VB_COLOR_AMMO_GREEN, shouldRegister, {
+        int16_t item = va_arg(args, int);
+        u8 max = gSaveContext.ship.quest.data.randomizer.rocsFeathersAcquired;
+        u8 current = gSaveContext.ship.quest.data.randomizer.rocsFeathersRemaining;
+        if (item == ITEM_ROCS_FEATHER) {
+            if (max == current) {
+                *should = true;
+            } else {
+                *should = false;
+            }
         }
     });
 }

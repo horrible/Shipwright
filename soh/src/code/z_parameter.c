@@ -4912,13 +4912,23 @@ void Interface_DrawAmmoCount(PlayState* play, s16 button, s16 alpha) {
     if (GameInteractor_Should(VB_DRAW_AMMO_COUNT,
                               ((i == ITEM_STICK) || (i == ITEM_NUT) || (i == ITEM_BOMB) || (i == ITEM_BOW) ||
                                ((i >= ITEM_BOW_ARROW_FIRE) && (i <= ITEM_BOW_ARROW_LIGHT)) || (i == ITEM_SLINGSHOT) ||
-                               (i == ITEM_BOMBCHU) || (i == ITEM_BEAN)),
+                               (i == ITEM_BOMBCHU) || (i == ITEM_BEAN) /* || (i == ITEM_ROCS_FEATHER && gSaveContext.ship.quest.data.randomizer.rocsFeathersAcquired > 1) */),
                               &i)) {
         if ((i >= ITEM_BOW_ARROW_FIRE) && (i <= ITEM_BOW_ARROW_LIGHT)) {
             i = ITEM_BOW;
         }
 
-        ammo = AMMO(i);
+        if (sizeof(gSaveContext.inventory.items) > i) {
+            ammo = AMMO(i);
+        } else {
+            switch (i) {
+                case ITEM_ROCS_FEATHER:
+                    ammo = (s16) gSaveContext.ship.quest.data.randomizer.rocsFeathersRemaining;
+                    break;
+                default:
+                    break;
+            }
+        }
 
         gDPPipeSync(OVERLAY_DISP++);
 
