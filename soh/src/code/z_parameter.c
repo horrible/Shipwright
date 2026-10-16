@@ -4918,16 +4918,8 @@ void Interface_DrawAmmoCount(PlayState* play, s16 button, s16 alpha) {
             i = ITEM_BOW;
         }
 
-        if (sizeof(gSaveContext.inventory.items) > i) {
+        if (GameInteractor_Should(VB_OVERRIDE_AMMO_COUNT, true, &i, &ammo)) {
             ammo = AMMO(i);
-        } else {
-            switch (i) {
-                case ITEM_ROCS_FEATHER:
-                    ammo = (s16) gSaveContext.ship.quest.data.randomizer.rocsFeathersRemaining;
-                    break;
-                default:
-                    break;
-            }
         }
 
         gDPPipeSync(OVERLAY_DISP++);

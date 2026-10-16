@@ -869,6 +869,7 @@ void Settings::CreateOptions() {
     OPT_BOOL(RSK_SHUFFLE_BUSHES, CVAR_RANDOMIZER_SETTING("ShuffleBushes"));
     OPT_BOOL(RSK_SHUFFLE_ICICLES, CVAR_RANDOMIZER_SETTING("ShuffleIcicles"));
     OPT_BOOL(RSK_SHUFFLE_RED_ICE, CVAR_RANDOMIZER_SETTING("ShuffleRedIce"));
+    OPT_BOOL(RSK_SHUFFLE_FIRE_GORONS, CVAR_RANDOMIZER_SETTING("ShuffleFireGorons"));
     OPT_U8(RSK_SHUFFLE_SIGNS, {"Off", "Dungeons", "Overworld", "All Signs"}, OptionCategory::Setting, CVAR_RANDOMIZER_SETTING("ShuffleSigns"), WIDGET_CVAR_COMBOBOX, RO_SHUFFLE_SIGNS_OFF);
     OPT_BOOL(RSK_SHUFFLE_FISHING_POLE, CVAR_RANDOMIZER_SETTING("ShuffleFishingPole"));
     OPT_CALLBACK(RSK_SHUFFLE_FISHING_POLE, {
@@ -1038,6 +1039,7 @@ void Settings::CreateOptions() {
     OPT_U8(RSK_MERCHANT_PRICES_TYCOON_WALLET_WEIGHT, {NumOpts(0, 100)}, OptionCategory::Setting, CVAR_RANDOMIZER_SETTING("MerchantTycoonWalletWeight"), WIDGET_CVAR_SLIDER_INT, 10, true, nullptr, IMFLAG_NONE);
     OPT_BOOL(RSK_MERCHANT_PRICES_AFFORDABLE, CVAR_RANDOMIZER_SETTING("MerchantPricesAffordable"));
     OPT_BOOL(RSK_SHUFFLE_BEGGAR, CVAR_RANDOMIZER_SETTING("ShuffleBeggar"));
+    OPT_BOOL(RSK_SHUFFLE_FISHERMANS_HAT, CVAR_RANDOMIZER_SETTING("ShuffleFishermansHat"));
     OPT_BOOL(RSK_SHUFFLE_FROG_SONG_RUPEES, CVAR_RANDOMIZER_SETTING("ShuffleFrogSongRupees"));
     OPT_BOOL(RSK_SHUFFLE_ADULT_TRADE, CVAR_RANDOMIZER_SETTING("ShuffleAdultTrade"));
     OPT_CALLBACK(RSK_SHUFFLE_ADULT_TRADE, {
@@ -1412,6 +1414,7 @@ void Settings::CreateOptions() {
         }
     });
     OPT_U8(RSK_ROCS_FEATHER_COUNT, {NumOpts(1, 10)}, OptionCategory::Setting, CVAR_RANDOMIZER_SETTING("RocsFeatherCount"), WIDGET_CVAR_SLIDER_INT);
+    OPT_U8(RSK_NAYRUS_LOVE_USES, {NumOpts(0, 5)}, OptionCategory::Setting, CVAR_RANDOMIZER_SETTING("NayrusLoveUses"), WIDGET_CVAR_SLIDER_INT, 0);
     OPT_U8(RSK_INFINITE_UPGRADES, {"Off", "Progressive", "Condensed Progressive"}, OptionCategory::Setting, CVAR_RANDOMIZER_SETTING("InfiniteUpgrades"));
     OPT_BOOL(RSK_SKELETON_KEY, CVAR_RANDOMIZER_SETTING("SkeletonKey"));
     OPT_BOOL(RSK_SLINGBOW_BREAK_BEEHIVES, CVAR_RANDOMIZER_SETTING("SlingBowBeehives"));
@@ -1802,6 +1805,7 @@ void Settings::CreateOptions() {
     OPT_TRICK(RT_SHADOW_UMBRELLA_GS, RCQUEST_BOTH, RA_SHADOW_TEMPLE, { Tricks::Tag::EXPERT }, "STUmbHB");
     OPT_TRICK(RT_SHADOW_FREESTANDING_KEY, RCQUEST_VANILLA, RA_SHADOW_TEMPLE, { Tricks::Tag::NOVICE }, "STPotChu");
     OPT_TRICK(RT_SHADOW_STATUE, RCQUEST_BOTH, RA_SHADOW_TEMPLE, { Tricks::Tag::INTERMEDIATE }, "STStaChu");
+    OPT_TRICK(RT_SHADOW_BUNNY_STATUE, RCQUEST_BOTH, RA_SHADOW_TEMPLE, { Tricks::Tag::ADVANCED }, "STStaBun");
     OPT_TRICK(RT_SHADOW_BONGO, RCQUEST_BOTH, RA_SHADOW_TEMPLE, { Tricks::Tag::INTERMEDIATE }, "BngNoPrg");
     OPT_TRICK(RT_LENS_SHADOW_MQ, RCQUEST_MQ, RA_SHADOW_TEMPLE, { Tricks::Tag::NOVICE }, "STMQStLoT");
     OPT_TRICK(RT_LENS_SHADOW_MQ_INVISIBLE_BLADES, RCQUEST_MQ, RA_SHADOW_TEMPLE, { Tricks::Tag::NOVICE }, "STBldLoT");
@@ -2062,6 +2066,7 @@ void Settings::CreateOptions() {
                                   &mOptions[RSK_SHUFFLE_BUSHES],
                                   &mOptions[RSK_SHUFFLE_ICICLES],
                                   &mOptions[RSK_SHUFFLE_RED_ICE],
+                                  &mOptions[RSK_SHUFFLE_FIRE_GORONS],
                                   &mOptions[RSK_SHUFFLE_SIGNS],
                                   &mOptions[RSK_SHUFFLE_FROG_SONG_RUPEES],
                                   &mOptions[RSK_SHUFFLE_ADULT_TRADE],
@@ -2115,6 +2120,7 @@ void Settings::CreateOptions() {
                                   &mOptions[RSK_MERCHANT_PRICES_TYCOON_WALLET_WEIGHT],
                                   &mOptions[RSK_MERCHANT_PRICES_AFFORDABLE],
                                   &mOptions[RSK_SHUFFLE_BEGGAR],
+                                  &mOptions[RSK_SHUFFLE_FISHERMANS_HAT],
                               },
                               WidgetContainerType::SECTION);
     mOptionGroups[RSG_MENU_COLUMN_SHOP_SHUFFLES] =
@@ -2136,6 +2142,7 @@ void Settings::CreateOptions() {
                                                                                  &mOptions[RSK_SHUFFLE_BEAN_SOULS],
                                                                                  &mOptions[RSK_ROCS_FEATHER],
                                                                                  &mOptions[RSK_ROCS_FEATHER_COUNT],
+                                                                                 &mOptions[RSK_NAYRUS_LOVE_USES],
                                                                                  &mOptions[RSK_BOMBCHU_BAG],
                                                                                  &mOptions[RSK_ENABLE_BOMBCHU_DROPS],
                                                                                  &mOptions[RSK_PROGRESSIVE_GORON_SWORD],
@@ -2298,6 +2305,7 @@ void Settings::CreateOptions() {
                                             &mOptions[RSK_SHUFFLE_BUSHES],
                                             &mOptions[RSK_SHUFFLE_ICICLES],
                                             &mOptions[RSK_SHUFFLE_RED_ICE],
+                                            &mOptions[RSK_SHUFFLE_FIRE_GORONS],
                                             &mOptions[RSK_SHUFFLE_SIGNS],
                                             &mOptions[RSK_SHUFFLE_KOKIRI_SWORD],
                                             &mOptions[RSK_SHUFFLE_OCARINA],
@@ -2325,6 +2333,7 @@ void Settings::CreateOptions() {
                                             &mOptions[RSK_MERCHANT_PRICES_TYCOON_WALLET_WEIGHT],
                                             &mOptions[RSK_MERCHANT_PRICES_AFFORDABLE],
                                             &mOptions[RSK_SHUFFLE_BEGGAR],
+                                            &mOptions[RSK_SHUFFLE_FISHERMANS_HAT],
                                             &mOptions[RSK_SHUFFLE_FROG_SONG_RUPEES],
                                             &mOptions[RSK_SHUFFLE_ADULT_TRADE],
                                             &mOptions[RSK_SHUFFLE_CHEST_MINIGAME],
@@ -2332,6 +2341,7 @@ void Settings::CreateOptions() {
                                             &mOptions[RSK_SHUFFLE_BEAN_SOULS],
                                             &mOptions[RSK_ROCS_FEATHER],
                                             &mOptions[RSK_ROCS_FEATHER_COUNT],
+                                            &mOptions[RSK_NAYRUS_LOVE_USES],
                                             &mOptions[RSK_PROGRESSIVE_GORON_SWORD],
                                             &mOptions[RSK_SHUFFLE_BOSS_SOULS],
                                             &mOptions[RSK_SHUFFLE_DEKU_STICK_BAG],
