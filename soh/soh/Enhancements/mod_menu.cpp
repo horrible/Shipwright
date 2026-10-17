@@ -245,7 +245,7 @@ void UpdateModFiles(bool init = false, bool reset = false) {
                 } else if (p.path().parent_path().generic_string().find("anchor") != std::string::npos) {
 
                     std::size_t index = p.path().parent_path().generic_string().find("anchor");
-                    if (index > 4 && p.path().parent_path().generic_string().substr(index-5, 4) == "mods") {
+                    if (index > 4 && p.path().parent_path().generic_string().substr(index - 5, 4) == "mods") {
                         continue;
                     }
                 }

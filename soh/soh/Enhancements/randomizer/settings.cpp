@@ -1406,14 +1406,17 @@ void Settings::CreateOptions() {
             case RO_ROCS_FEATHER_ON:
             case RO_ROCS_FEATHER_CONSUMABLE:
                 mOptions[RSK_ROCS_FEATHER_COUNT].Unhide();
+                mOptions[RSK_ROCS_FEATHER_ON_A].Unhide();
                 break;
             case RO_ROCS_FEATHER_OFF:
             default:
                 mOptions[RSK_ROCS_FEATHER_COUNT].Hide();
+                mOptions[RSK_ROCS_FEATHER_ON_A].Hide();
                 break;
         }
     });
     OPT_U8(RSK_ROCS_FEATHER_COUNT, {NumOpts(1, 10)}, OptionCategory::Setting, CVAR_RANDOMIZER_SETTING("RocsFeatherCount"), WIDGET_CVAR_SLIDER_INT);
+    OPT_BOOL(RSK_ROCS_FEATHER_ON_A, CVAR_RANDOMIZER_SETTING("RocsFeatherOnA"));
     OPT_U8(RSK_NAYRUS_LOVE_USES, {NumOpts(0, 5)}, OptionCategory::Setting, CVAR_RANDOMIZER_SETTING("NayrusLoveUses"), WIDGET_CVAR_SLIDER_INT, 0);
     OPT_U8(RSK_INFINITE_UPGRADES, {"Off", "Progressive", "Condensed Progressive"}, OptionCategory::Setting, CVAR_RANDOMIZER_SETTING("InfiniteUpgrades"));
     OPT_BOOL(RSK_SKELETON_KEY, CVAR_RANDOMIZER_SETTING("SkeletonKey"));
@@ -2142,6 +2145,7 @@ void Settings::CreateOptions() {
                                                                                  &mOptions[RSK_SHUFFLE_BEAN_SOULS],
                                                                                  &mOptions[RSK_ROCS_FEATHER],
                                                                                  &mOptions[RSK_ROCS_FEATHER_COUNT],
+                                                                                 &mOptions[RSK_ROCS_FEATHER_ON_A],
                                                                                  &mOptions[RSK_NAYRUS_LOVE_USES],
                                                                                  &mOptions[RSK_BOMBCHU_BAG],
                                                                                  &mOptions[RSK_ENABLE_BOMBCHU_DROPS],
@@ -2341,6 +2345,7 @@ void Settings::CreateOptions() {
                                             &mOptions[RSK_SHUFFLE_BEAN_SOULS],
                                             &mOptions[RSK_ROCS_FEATHER],
                                             &mOptions[RSK_ROCS_FEATHER_COUNT],
+                                            &mOptions[RSK_ROCS_FEATHER_ON_A],
                                             &mOptions[RSK_NAYRUS_LOVE_USES],
                                             &mOptions[RSK_PROGRESSIVE_GORON_SWORD],
                                             &mOptions[RSK_SHUFFLE_BOSS_SOULS],

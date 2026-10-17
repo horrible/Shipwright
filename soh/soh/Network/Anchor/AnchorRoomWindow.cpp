@@ -85,7 +85,8 @@ void AnchorRoomWindow::DrawElement() {
             }
             ImGui::SameLine();
             ImGui::BeginDisabled(client.self);
-            const char* selected_item = client.self ? "self (system-managed)" : std::get<0>(clientMods[client.altModelIndex]).c_str();
+            const char* selected_item =
+                client.self ? "(auto)" : std::get<0>(clientMods[client.altModelIndex]).c_str();
             if (ImGui::BeginCombo("##clientModSelector", selected_item)) {
                 for (size_t i = 0; i < clientMods.size(); i++) {
                     const char* name = std::get<0>(clientMods[i]).c_str();

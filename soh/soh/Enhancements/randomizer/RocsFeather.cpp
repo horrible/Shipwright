@@ -15,17 +15,15 @@ extern SaveContext gSaveContext;
 #define MAX_ROCS_USES 1
 
 static uint8_t& rocsMaxUse = gSaveContext.ship.quest.data.randomizer.rocsFeathersAcquired;
-static uint8_t& rocsRemaining = gSaveContext.ship.quest.data.randomizer.rocsFeathersRemaining; 
+static uint8_t& rocsRemaining = gSaveContext.ship.quest.data.randomizer.rocsFeathersRemaining;
 static uint8_t groundTimer = 0;
 static f32 effectsScale = 1.0f;
 static bool rocsConsumable = false;
-
 
 void RegisterRocsFeather() {
     // Always register hooks - they only activate when ITEM_ROCS_FEATHER is actually used
     // Rando-specific logic (item pool, accessibility, etc.) is handled elsewhere
     bool shouldRegister = true;
-
 
     COND_HOOK(OnLoadFile, shouldRegister, [](int32_t fileNum) {
         rocsConsumable = Rando::Context::GetInstance()->GetOption(RSK_ROCS_FEATHER).Is(RO_ROCS_FEATHER_CONSUMABLE);
@@ -49,6 +47,7 @@ void RegisterRocsFeather() {
     });
 
     COND_VB_SHOULD(VB_CHANGE_HELD_ITEM_AND_USE_ITEM, shouldRegister, {
+        LUSLOG_WARN("LIZDEBUG !!! ASKED TO VB_CHANGE_HELD_ITEM_AND_USE_ITEM!!!");
         int32_t usedItem = va_arg(args, int32_t);
 
         // Roc's Feather behaviour
@@ -92,6 +91,59 @@ void RegisterRocsFeather() {
         }
     });
 
+    COND_VB_SHOULD(VB_CHANGE_ACTION_AND_USE, shouldRegister, {
+        LUSLOG_WARN("LIZDEBUG !!! ASKED TO VB_CHANGE_ACTION_AND_USE!!!");
+        Player* player = va_arg(args, Player*);
+        PlayState* playState = va_arg(args, PlayState*);
+        u16 action = playState->interfaceCtx.unk_1F0;
+
+        // Roc's Feather behaviour
+        //z-targetting disables this because it interferes with sidehopping.
+        if (player->stateFlags1 & 
+            (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS | PLAYER_STATE1_PARALLEL | PLAYER_STATE1_LOCK_ON_FORCED_TO_RELEASE)) {
+            
+        } else if ((action == DO_ACTION_NONE || (action != DO_ACTION_DOWN && !(player->actor.bgCheckFlags & 1))) &&
+            !(player->stateFlags1 & PLAYER_STATE1_CLIMBING_LADDER) &&
+            rocsRemaining > 0 && 
+            Rando::Context::GetInstance()->GetOption(RSK_ROCS_FEATHER_ON_A).Is(1)) {
+            *should = false;
+
+            if (rocsRemaining > 0) {
+                rocsRemaining--;
+
+                func_80838940(player, (LinkAnimationHeader*)&gPlayerAnim_link_rocs_feather_jump, 5.8f, playState, 0);
+
+                // Actionvar needed to prevent weird animation morph
+                player->av2.actionVar2 = 1;
+
+                // Move player forward on Roc's use
+                player->linearVelocity = 5.0f;
+                player->actor.world.rot.y = player->yaw = player->actor.shape.rot.y;
+
+                if (gSaveContext.linkAge == LINK_AGE_CHILD) {
+                    player->actor.velocity.y = 7.0f;
+                    effectsScale = 1.0f;
+                } else {
+                    player->actor.velocity.y = 7.5f;
+                    effectsScale = 1.5f;
+                }
+
+                Vec3f effectsPos = player->actor.home.pos;
+                effectsPos.y += 3;
+
+                EffectSsGRipple_Spawn(playState, &effectsPos, static_cast<s16>(200 * effectsScale),
+                                      static_cast<s16>(300 * effectsScale), 1);
+                EffectSsGSplash_Spawn(playState, &effectsPos, NULL, NULL, 0, static_cast<s16>(150 * effectsScale));
+
+                // Remove hopping state when using Roc's after sidehop/backflip to allow grabbing ledges again
+                player->stateFlags2 &= ~(PLAYER_STATE2_HOPPING);
+
+                Player_PlaySfx(&player->actor, NA_SE_PL_SKIP);
+            }
+        }
+    });
+    
+
     COND_VB_SHOULD(VB_DRAW_CUSTOM_ITEM_NAME, shouldRegister, {
         u32 namedItem = va_arg(args, u32);
         if (namedItem == ITEM_ROCS_FEATHER) {
@@ -108,13 +160,13 @@ void RegisterRocsFeather() {
         }
     });
 
-    COND_VB_SHOULD(VB_ITEM_USES_AMMO, shouldRegister, {
-        s16 item = *va_arg(args, s16*);
+    COND_VB_SHOULD(VB_OVERRIDE_AMMO_COUNT, shouldRegister, {
+        int16_t item = *va_arg(args, int16_t*);
+        int16_t* ammo = va_arg(args, int16_t*);
         if (item == ITEM_ROCS_FEATHER) {
-            if (gSaveContext.ship.quest.data.randomizer.rocsFeathersAcquired > 1) {
-                *should = true;
-            } else {
+            if (rocsMaxUse > 1) {
                 *should = false;
+                *ammo = rocsRemaining;
             }
         }
     });
@@ -122,7 +174,18 @@ void RegisterRocsFeather() {
     COND_VB_SHOULD(VB_DRAW_AMMO_COUNT, shouldRegister, {
         s16 item = *va_arg(args, s16*);
         if (item == ITEM_ROCS_FEATHER) {
-            if (gSaveContext.ship.quest.data.randomizer.rocsFeathersAcquired > 1) {
+            if (rocsMaxUse > 1) {
+                *should = true;
+            } else {
+                *should = false;
+            }
+        }
+    });
+    
+    COND_VB_SHOULD(VB_COLOR_AMMO_GREEN, shouldRegister, {
+        int16_t item = va_arg(args, int);
+        if (item == ITEM_ROCS_FEATHER) {
+            if (rocsMaxUse == rocsRemaining) {
                 *should = true;
             } else {
                 *should = false;
@@ -130,16 +193,24 @@ void RegisterRocsFeather() {
         }
     });
 
-    COND_VB_SHOULD(VB_COLOR_AMMO_GREEN, shouldRegister, {
-        int16_t item = va_arg(args, int);
-        u8 max = gSaveContext.ship.quest.data.randomizer.rocsFeathersAcquired;
-        u8 current = gSaveContext.ship.quest.data.randomizer.rocsFeathersRemaining;
-        if (item == ITEM_ROCS_FEATHER) {
-            if (max == current) {
-                *should = true;
-            } else {
-                *should = false;
-            }
+    COND_VB_SHOULD(VB_SET_A_BUTTON_ITEM_TEXTURE, shouldRegister, {
+        u16 action = *va_arg(args, u16*);
+        bool* rgbaIcon = va_arg(args, bool*);
+        const char **alternateTexture = va_arg(args, const char**);
+        Player* player = GET_PLAYER(gPlayState);
+
+        //z-targetting disables this because it interferes with sidehopping.
+        if (player->stateFlags1 & 
+            (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS | PLAYER_STATE1_PARALLEL | PLAYER_STATE1_LOCK_ON_FORCED_TO_RELEASE)) {
+            *should = false;
+        } else if ((action == DO_ACTION_NONE || (action != DO_ACTION_DOWN && !player->actor.bgCheckFlags & 1)) && 
+            rocsRemaining > 0 && 
+            Rando::Context::GetInstance()->GetOption(RSK_ROCS_FEATHER_ON_A).Get() == 1) {
+            *should = true;
+            *rgbaIcon = true;
+            *alternateTexture = gRocsFeatherTex;
+        } else {
+            *should = false;
         }
     });
 }

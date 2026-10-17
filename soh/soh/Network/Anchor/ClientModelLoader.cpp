@@ -41,33 +41,36 @@ void populateClientModelList(std::filesystem::directory_entry p) {
         bool validAnchor = false;
         std::shared_ptr<Ship::Archive> archive = nullptr;
 
-        if ((entry.is_directory()  // yay, we have a likely valid archive
-            || (entry.is_regular_file() && IsValidExtension(entry.path().extension().generic_string())))) {
+        if ((entry.is_directory() // yay, we have a likely valid archive
+             || (entry.is_regular_file() && IsValidExtension(entry.path().extension().generic_string())))) {
 
             std::string extension = entry.path().extension().generic_string();
 
             if (entry.is_directory()) {
                 archive = std::make_shared<Ship::FolderArchive>(entry.path().generic_string());
                 modName = entry.path().filename().generic_string();
-            // vvv comment made by some idiot who hadn't yet had to make sure bones were in the right order :eye_roll_emoji: vvv
-            //suuuuper fun. okay. unpack the o2r/otr. check if it has a valid path for adult/child, and only include if it does
+                // vvv comment made by some idiot who hadn't yet had to make sure bones were in the right order
+                // :eye_roll_emoji: vvv
+                // suuuuper fun. okay. unpack the o2r/otr. check if it has a valid path for adult/child, and only
+                // include if it does
             } else if (entry.is_regular_file()) {
                 if (StringHelper::IEquals(extension, ".o2r")) {
                     archive = std::make_shared<Ship::O2rArchive>(entry.path().generic_string());
                     modName = entry.path().stem().generic_string();
-                #ifdef INCLUDE_MPQ_SUPPORT
+#ifdef INCLUDE_MPQ_SUPPORT
                 } else if (StringHelper::IEquals(extension, ".otr")) {
                     archive = std::make_shared<Ship::OtrArchive>(entry.path().generic_string());
                     modName = entry.path().stem().generic_string();
-                #endif
+#endif
                 }
             }
 
             if ((archive != nullptr) && archive->Open()) {
                 std::shared_ptr<Ship::File> adultPath = archive->LoadFile("alt/objects/object_link_boy/gLinkAdultSkel");
-                std::shared_ptr<Ship::File> childPath = archive->LoadFile("alt/objects/object_link_child/gLinkChildSkel");
+                std::shared_ptr<Ship::File> childPath =
+                    archive->LoadFile("alt/objects/object_link_child/gLinkChildSkel");
                 if (adultPath != nullptr || childPath != nullptr) {
-                    //good enough. probably has a skeleton
+                    // good enough. probably has a skeleton
                     anchorPath = p.path().generic_string() + '/' + modName;
                     validAnchor = true;
                 }
@@ -224,7 +227,7 @@ uint64_t orderReferencesRecursively(
         }
     }
 
-    //append file to to placementvector if it has no children left to be added before it
+    // append file to to placementvector if it has no children left to be added before it
     if (totalChildren == finishedChildren) {
         orderedReferences.insert(orderedReferences.end(), filename);
         included.insert(filename);

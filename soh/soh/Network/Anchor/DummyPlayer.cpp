@@ -77,10 +77,11 @@ void DummyPlayer_Init(Actor* actor, PlayState* play) {
 
     // Hack to register & manage custom skeletons
     if ((client.altModelIndex >= 0) && (client.altModelIndex < clientMods.size())) {
-        //update client Skeleton here
+        // update client Skeleton here
         auto& [mod, adultSkel, childSkel] = clientMods[client.altModelIndex];
         std::string assetPath = client.linkAge == 0 ? adultSkel : childSkel;
-        SOH::SkeletonPatchInfo actorSkelePatchInfo = SOH::SkeletonPatcher::RegisterSkeleton(assetPath, &player->skelAnime, true);
+        SOH::SkeletonPatchInfo actorSkelePatchInfo =
+            SOH::SkeletonPatcher::RegisterSkeleton(assetPath, &player->skelAnime, false);
         SOH::SkeletonPatcher::UpdateCustomSkeletonFromPath(assetPath, actorSkelePatchInfo);
     }
 
