@@ -237,13 +237,15 @@ void UpdateModFiles(bool init = false, bool reset = false) {
             for (const std::filesystem::directory_entry& p : std::filesystem::recursive_directory_iterator(
                      modsPath, std::filesystem::directory_options::follow_directory_symlink)) {
                 if (p.is_directory()) {
-                    //* start changes
+
+                    //add mods in ./mods/anchor to the list for anchor clients
                     if (StringHelper::IEquals(p.path().filename().generic_string(), "anchor")) {
-                        populateClientModelList(p);
+                        PopulateClientModelList(p);
                     }
                     continue;
                 } else if (p.path().parent_path().generic_string().find("anchor") != std::string::npos) {
 
+                    //exclude mods in ./mods/anchor from the main list load & modlist
                     std::size_t index = p.path().parent_path().generic_string().find("anchor");
                     if (index > 4 && p.path().parent_path().generic_string().substr(index - 5, 4) == "mods") {
                         continue;

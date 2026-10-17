@@ -375,10 +375,24 @@ typedef enum {
     // ```c
     // true
     // ```
+    // Whether the default action for A should be used. Sending false will (attempt to)
+    // intercept it.
     // #### `args`
     // - Player* player
     // - PlayState* playState
     VB_CHANGE_ACTION_AND_USE,
+
+    // #### `result`
+    // ```c
+    // true
+    // ```
+    // Whether the default texture for a given action on the A button should be used.
+    // A hook returning false should specify the replacement texture format and memory location
+    // #### `args`
+    // - `u16 action` (`DO_ACTION_<action>` - specified in `z64.h`'s `DoAction` struct)
+    // - `bool rgbaIcon` (false if should stay G_IM_FMT_IA, true if should be full color G_IM_FMT_RGBA)
+    // - `char* alternateTexture` (pointer to load a specific 48 x16 or 32 x 32 texture for the icon from)
+    VB_SET_ACTION_TEXTURE,
 
     // #### `result`
     // ```c
@@ -4189,18 +4203,6 @@ typedef enum {
     // #### `args`
     // - none
     VB_EMPTY_BOTTLE_OI,
-
-    // #### `result`
-    // ```c
-    // true
-    // ```
-    // Whether the default texture for a given action on the A button should be used.
-    // A hook returning false should specify and write its texture, which is really fucking mean. sorry?
-    // #### `args`
-    // - `u16 action` (`DO_ACTION_<action>` - specified in `z64.h`'s `DoAction` struct)
-    // - `bool rgbaIcon` (false if should stay G_IM_FMT_IA, true if should be full color G_IM_FMT_RGBA)
-    // - `char* alternateTexture` (pointer to load a specific 48 x16 or 32 x 32 texture for the icon from)
-    VB_SET_A_BUTTON_ITEM_TEXTURE,
 
 
 } GIVanillaBehavior;

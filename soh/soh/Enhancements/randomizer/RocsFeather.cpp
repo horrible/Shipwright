@@ -20,6 +20,42 @@ static uint8_t groundTimer = 0;
 static f32 effectsScale = 1.0f;
 static bool rocsConsumable = false;
 
+void UseRocsFeather(Player* player, PlayState* playState) {
+    if (rocsRemaining > 0) {
+        rocsRemaining--;
+
+
+        func_80838940(player, (LinkAnimationHeader*)&gPlayerAnim_link_rocs_feather_jump, 5.8f, playState, 0);
+
+        // Actionvar needed to prevent weird animation morph
+        player->av2.actionVar2 = 1;
+
+        // Move player forward on Roc's use
+        player->linearVelocity = 5.0f;
+        player->actor.world.rot.y = player->yaw = player->actor.shape.rot.y;
+
+        if (gSaveContext.linkAge == LINK_AGE_CHILD) {
+            player->actor.velocity.y = 7.0f;
+            effectsScale = 1.0f;
+        } else {
+            player->actor.velocity.y = 7.5f;
+            effectsScale = 1.5f;
+        }
+
+        Vec3f effectsPos = player->actor.home.pos;
+        effectsPos.y += 3;
+
+        EffectSsGRipple_Spawn(playState, &effectsPos, static_cast<s16>(200 * effectsScale),
+                                static_cast<s16>(300 * effectsScale), 1);
+        EffectSsGSplash_Spawn(playState, &effectsPos, NULL, NULL, 0, static_cast<s16>(150 * effectsScale));
+
+        // Remove hopping state when using Roc's after sidehop/backflip to allow grabbing ledges again
+        player->stateFlags2 &= ~(PLAYER_STATE2_HOPPING);
+
+        Player_PlaySfx(&player->actor, NA_SE_PL_SKIP);
+    }
+}
+
 void RegisterRocsFeather() {
     // Always register hooks - they only activate when ITEM_ROCS_FEATHER is actually used
     // Rando-specific logic (item pool, accessibility, etc.) is handled elsewhere
@@ -47,52 +83,19 @@ void RegisterRocsFeather() {
     });
 
     COND_VB_SHOULD(VB_CHANGE_HELD_ITEM_AND_USE_ITEM, shouldRegister, {
-        LUSLOG_WARN("LIZDEBUG !!! ASKED TO VB_CHANGE_HELD_ITEM_AND_USE_ITEM!!!");
         int32_t usedItem = va_arg(args, int32_t);
 
         // Roc's Feather behaviour
         if (usedItem == ITEM_ROCS_FEATHER) {
             *should = false;
 
-            if (rocsRemaining > 0) {
-                rocsRemaining--;
+            Player* player = GET_PLAYER(gPlayState);
 
-                Player* player = GET_PLAYER(gPlayState);
-
-                func_80838940(player, (LinkAnimationHeader*)&gPlayerAnim_link_rocs_feather_jump, 5.8f, gPlayState, 0);
-
-                // Actionvar needed to prevent weird animation morph
-                player->av2.actionVar2 = 1;
-
-                // Move player forward on Roc's use
-                player->linearVelocity = 5.0f;
-                player->actor.world.rot.y = player->yaw = player->actor.shape.rot.y;
-
-                if (gSaveContext.linkAge == LINK_AGE_CHILD) {
-                    player->actor.velocity.y = 7.0f;
-                    effectsScale = 1.0f;
-                } else {
-                    player->actor.velocity.y = 7.5f;
-                    effectsScale = 1.5f;
-                }
-
-                Vec3f effectsPos = player->actor.home.pos;
-                effectsPos.y += 3;
-
-                EffectSsGRipple_Spawn(gPlayState, &effectsPos, static_cast<s16>(200 * effectsScale),
-                                      static_cast<s16>(300 * effectsScale), 1);
-                EffectSsGSplash_Spawn(gPlayState, &effectsPos, NULL, NULL, 0, static_cast<s16>(150 * effectsScale));
-
-                // Remove hopping state when using Roc's after sidehop/backflip to allow grabbing ledges again
-                player->stateFlags2 &= ~(PLAYER_STATE2_HOPPING);
-
-                Player_PlaySfx(&player->actor, NA_SE_PL_SKIP);
-            }
+            UseRocsFeather(player, gPlayState);
         }
     });
 
     COND_VB_SHOULD(VB_CHANGE_ACTION_AND_USE, shouldRegister, {
-        LUSLOG_WARN("LIZDEBUG !!! ASKED TO VB_CHANGE_ACTION_AND_USE!!!");
         Player* player = va_arg(args, Player*);
         PlayState* playState = va_arg(args, PlayState*);
         u16 action = playState->interfaceCtx.unk_1F0;
@@ -100,46 +103,19 @@ void RegisterRocsFeather() {
         // Roc's Feather behaviour
         //z-targetting disables this because it interferes with sidehopping.
         if (player->stateFlags1 & 
-            (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS | PLAYER_STATE1_PARALLEL | PLAYER_STATE1_LOCK_ON_FORCED_TO_RELEASE)) {
+            (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS | PLAYER_STATE1_PARALLEL)) {
             
-        } else if ((action == DO_ACTION_NONE || (action != DO_ACTION_DOWN && !(player->actor.bgCheckFlags & 1))) &&
+        } else if ((action == DO_ACTION_NONE || (
+                action != DO_ACTION_DOWN && 
+                action != DO_ACTION_DROP && 
+                action != DO_ACTION_THROW && 
+                !player->actor.bgCheckFlags & 1)) &&
             !(player->stateFlags1 & PLAYER_STATE1_CLIMBING_LADDER) &&
             rocsRemaining > 0 && 
             Rando::Context::GetInstance()->GetOption(RSK_ROCS_FEATHER_ON_A).Is(1)) {
             *should = false;
 
-            if (rocsRemaining > 0) {
-                rocsRemaining--;
-
-                func_80838940(player, (LinkAnimationHeader*)&gPlayerAnim_link_rocs_feather_jump, 5.8f, playState, 0);
-
-                // Actionvar needed to prevent weird animation morph
-                player->av2.actionVar2 = 1;
-
-                // Move player forward on Roc's use
-                player->linearVelocity = 5.0f;
-                player->actor.world.rot.y = player->yaw = player->actor.shape.rot.y;
-
-                if (gSaveContext.linkAge == LINK_AGE_CHILD) {
-                    player->actor.velocity.y = 7.0f;
-                    effectsScale = 1.0f;
-                } else {
-                    player->actor.velocity.y = 7.5f;
-                    effectsScale = 1.5f;
-                }
-
-                Vec3f effectsPos = player->actor.home.pos;
-                effectsPos.y += 3;
-
-                EffectSsGRipple_Spawn(playState, &effectsPos, static_cast<s16>(200 * effectsScale),
-                                      static_cast<s16>(300 * effectsScale), 1);
-                EffectSsGSplash_Spawn(playState, &effectsPos, NULL, NULL, 0, static_cast<s16>(150 * effectsScale));
-
-                // Remove hopping state when using Roc's after sidehop/backflip to allow grabbing ledges again
-                player->stateFlags2 &= ~(PLAYER_STATE2_HOPPING);
-
-                Player_PlaySfx(&player->actor, NA_SE_PL_SKIP);
-            }
+            UseRocsFeather(player, playState);
         }
     });
     
@@ -183,7 +159,7 @@ void RegisterRocsFeather() {
     });
     
     COND_VB_SHOULD(VB_COLOR_AMMO_GREEN, shouldRegister, {
-        int16_t item = va_arg(args, int);
+        s16 item = va_arg(args, s16);
         if (item == ITEM_ROCS_FEATHER) {
             if (rocsMaxUse == rocsRemaining) {
                 *should = true;
@@ -193,7 +169,7 @@ void RegisterRocsFeather() {
         }
     });
 
-    COND_VB_SHOULD(VB_SET_A_BUTTON_ITEM_TEXTURE, shouldRegister, {
+    COND_VB_SHOULD(VB_SET_ACTION_TEXTURE, shouldRegister, {
         u16 action = *va_arg(args, u16*);
         bool* rgbaIcon = va_arg(args, bool*);
         const char **alternateTexture = va_arg(args, const char**);
@@ -201,9 +177,13 @@ void RegisterRocsFeather() {
 
         //z-targetting disables this because it interferes with sidehopping.
         if (player->stateFlags1 & 
-            (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS | PLAYER_STATE1_PARALLEL | PLAYER_STATE1_LOCK_ON_FORCED_TO_RELEASE)) {
+            (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS | PLAYER_STATE1_PARALLEL)) {
             *should = false;
-        } else if ((action == DO_ACTION_NONE || (action != DO_ACTION_DOWN && !player->actor.bgCheckFlags & 1)) && 
+        } else if ((action == DO_ACTION_NONE || (
+                action != DO_ACTION_DOWN && 
+                action != DO_ACTION_DROP && 
+                action != DO_ACTION_THROW && 
+                !player->actor.bgCheckFlags & 1)) && 
             rocsRemaining > 0 && 
             Rando::Context::GetInstance()->GetOption(RSK_ROCS_FEATHER_ON_A).Get() == 1) {
             *should = true;

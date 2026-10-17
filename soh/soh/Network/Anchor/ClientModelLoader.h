@@ -11,6 +11,6 @@ extern std::vector<std::tuple<std::string, std::string, std::string>> clientMods
 #include <mutex>
 #include <list>
 
-void populateClientModelList(std::filesystem::directory_entry p);
+void PopulateClientModelList(std::filesystem::directory_entry p);
 
 #endif // __cplusplus

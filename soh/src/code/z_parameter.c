@@ -2778,7 +2778,7 @@ void func_80086D5C(s32* buf, u16 size) {
 void Interface_LoadActionLabel(InterfaceContext* interfaceCtx, u16 action, s16 loadOffset) {
     bool rgbaIcon = false;
     const char *alternateTexture = &gEmptyTexture;
-    if (!GameInteractor_Should(VB_SET_A_BUTTON_ITEM_TEXTURE, true, &action, &rgbaIcon, &alternateTexture)) {
+    if (!GameInteractor_Should(VB_SET_ACTION_TEXTURE , true, &action, &rgbaIcon, &alternateTexture)) {
         static void* sDoActionTextures[] = { gAttackDoActionENGTex, gCheckDoActionENGTex };
         if (action >= DO_ACTION_MAX) {
             action = DO_ACTION_NONE;
