@@ -176,8 +176,11 @@ void RegisterRocsFeather() {
         Player* player = GET_PLAYER(gPlayState);
 
         //z-targetting disables this because it interferes with sidehopping.
-        if (player->stateFlags1 & 
-            (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS | PLAYER_STATE1_PARALLEL)) {
+        if ((player->stateFlags1 & (
+                PLAYER_STATE1_HOSTILE_LOCK_ON |
+                PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS |
+                PLAYER_STATE1_PARALLEL)) ||
+            (gPlayState->pauseCtx.state > 0 && gPlayState->pauseCtx.state < 18)) {
             *should = false;
         } else if ((action == DO_ACTION_NONE || (
                 action != DO_ACTION_DOWN && 

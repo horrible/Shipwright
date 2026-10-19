@@ -2776,45 +2776,36 @@ void func_80086D5C(s32* buf, u16 size) {
 }
 
 void Interface_LoadActionLabel(InterfaceContext* interfaceCtx, u16 action, s16 loadOffset) {
-    bool rgbaIcon = false;
-    const char *alternateTexture = &gEmptyTexture;
-    if (!GameInteractor_Should(VB_SET_ACTION_TEXTURE , true, &action, &rgbaIcon, &alternateTexture)) {
-        static void* sDoActionTextures[] = { gAttackDoActionENGTex, gCheckDoActionENGTex };
-        if (action >= DO_ACTION_MAX) {
-            action = DO_ACTION_NONE;
-        }
-
-        char* doAction = actionsTbl[action];
-
-        static char newName[4][512];
-        if (gSaveContext.language != LANGUAGE_ENG) {
-            size_t length = strlen(doAction);
-            strcpy(newName[loadOffset], doAction);
-            if (gSaveContext.language == LANGUAGE_FRA) {
-                newName[loadOffset][length - 6] = 'F';
-                newName[loadOffset][length - 5] = 'R';
-                newName[loadOffset][length - 4] = 'A';
-            } else if (gSaveContext.language == LANGUAGE_GER) {
-                newName[loadOffset][length - 6] = 'G';
-                newName[loadOffset][length - 5] = 'E';
-                newName[loadOffset][length - 4] = 'R';
-            } else if (gSaveContext.language == LANGUAGE_JPN) {
-                newName[loadOffset][length - 6] = 'J';
-                newName[loadOffset][length - 5] = 'P';
-                newName[loadOffset][length - 4] = 'N';
-            }
-            doAction = newName[loadOffset];
-        }
-        
-        char* segment = interfaceCtx->doActionSegment[loadOffset];
-        interfaceCtx->doActionSegment[loadOffset^1] = 0x0;
-        interfaceCtx->doActionSegment[loadOffset] = action != DO_ACTION_NONE ? doAction : gEmptyTexture;
-        gSegments[7] = interfaceCtx->doActionSegment[loadOffset];
+    static void* sDoActionTextures[] = { gAttackDoActionENGTex, gCheckDoActionENGTex };
+    if (action >= DO_ACTION_MAX) {
+        action = DO_ACTION_NONE;
     }
-    if (rgbaIcon || (alternateTexture != &gEmptyTexture)) {
-        interfaceCtx->doActionSegment[loadOffset] = 0x1;
-        interfaceCtx->doActionSegment[loadOffset^1] = alternateTexture;
+
+    char* doAction = actionsTbl[action];
+
+    static char newName[4][512];
+    if (gSaveContext.language != LANGUAGE_ENG) {
+        size_t length = strlen(doAction);
+        strcpy(newName[loadOffset], doAction);
+        if (gSaveContext.language == LANGUAGE_FRA) {
+            newName[loadOffset][length - 6] = 'F';
+            newName[loadOffset][length - 5] = 'R';
+            newName[loadOffset][length - 4] = 'A';
+        } else if (gSaveContext.language == LANGUAGE_GER) {
+            newName[loadOffset][length - 6] = 'G';
+            newName[loadOffset][length - 5] = 'E';
+            newName[loadOffset][length - 4] = 'R';
+        } else if (gSaveContext.language == LANGUAGE_JPN) {
+            newName[loadOffset][length - 6] = 'J';
+            newName[loadOffset][length - 5] = 'P';
+            newName[loadOffset][length - 4] = 'N';
+        }
+        doAction = newName[loadOffset];
     }
+
+    char* segment = interfaceCtx->doActionSegment[loadOffset];
+    interfaceCtx->doActionSegment[loadOffset] = action != DO_ACTION_NONE ? doAction : gEmptyTexture;
+    gSegments[7] = interfaceCtx->doActionSegment[loadOffset];
 }
 
 void Interface_SetDoAction(PlayState* play, u16 action) {
@@ -2888,7 +2879,7 @@ void Interface_LoadActionLabelB(PlayState* play, u16 action) {
     interfaceCtx->doActionSegment[1] = action != DO_ACTION_NONE ? doAction : gEmptyTexture;
     osRecvMesg(&interfaceCtx->loadQueue, NULL, OS_MESG_BLOCK);
 
-    interfaceCtx->unk_1FA = 1;
+    interfaceCtx->unk_1FA |= 1;
 }
 
 s32 Health_ChangeBy(PlayState* play, s16 healthChange) {
@@ -5487,7 +5478,7 @@ void Interface_Draw(PlayState* play) {
         gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 255, interfaceCtx->bAlpha);
         gDPSetCombineMode(OVERLAY_DISP++, G_CC_MODULATERGBA_PRIM, G_CC_MODULATERGBA_PRIM);
 
-        if (!(interfaceCtx->unk_1FA)) {
+        if (!(interfaceCtx->unk_1FA & (1 << 0))) {
             // B Button Icon & Ammo Count
             if (gSaveContext.equips.buttonItems[0] != ITEM_NONE) {
                 if (fullUi) {
@@ -5777,10 +5768,8 @@ void Interface_Draw(PlayState* play) {
         gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 255, interfaceCtx->aAlpha);
         gDPSetEnvColor(OVERLAY_DISP++, 0, 0, 0, 0);
 
-        //set in Interface_LoadActionLabel if there's a manual override
-        if (((uintptr_t) interfaceCtx->doActionSegment[0]) == 0x1) { 
-            Interface_DrawActionIcon(play, PosX_BtnA, PosY_BtnA, interfaceCtx->doActionSegment[1]);
-        } else if (((uintptr_t) interfaceCtx->doActionSegment[1]) == 0x1) {
+        //bit set in Interface_LoadActionLabel if there's a manual override to show an icon
+        if (interfaceCtx->unk_1FA & (1 << 1)) {
             Interface_DrawActionIcon(play, PosX_BtnA, PosY_BtnA, interfaceCtx->doActionSegment[0]);
         } else {
             Matrix_Translate(-138.0f + rAIconX, rAIconY, WREG(46 + languageOffset) / 10.0f, MTXMODE_NEW);
@@ -5789,7 +5778,7 @@ void Interface_Draw(PlayState* play) {
             gSPMatrix(OVERLAY_DISP++, MATRIX_NEWMTX(play->state.gfxCtx), G_MTX_MODELVIEW | G_MTX_LOAD);
             gSPVertex(OVERLAY_DISP++, &interfaceCtx->actionVtx[4], 4, 0);
 
-            if (((uintptr_t) interfaceCtx->doActionSegment[1]) <= 0x1) {
+            if ((interfaceCtx->unk_1EC < 2) || (interfaceCtx->unk_1EC == 3)) {
                 Interface_DrawActionLabel(play->state.gfxCtx, interfaceCtx->doActionSegment[0]);
             } else {
                 Interface_DrawActionLabel(play->state.gfxCtx, interfaceCtx->doActionSegment[1]);
@@ -6812,7 +6801,13 @@ void Interface_Update(PlayState* play) {
                 if ((action == DO_ACTION_MAX) || (action == DO_ACTION_MAX + 1)) {
                     action = DO_ACTION_NONE;
                 }
-                Interface_LoadActionLabel(interfaceCtx, action, 0);
+                bool rgbaIcon = false;
+                if (!GameInteractor_Should(VB_SET_ACTION_TEXTURE , true, &action, &rgbaIcon, &interfaceCtx->doActionSegment[0])) {
+                    Interface_LoadActionLabel(interfaceCtx, action, 0);
+                    interfaceCtx->unk_1FA &= ~(1 << 1);
+                } else {
+                    interfaceCtx->unk_1FA |= (1 << 1);
+                }
             }
             break;
         case 3:
