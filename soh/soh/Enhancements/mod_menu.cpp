@@ -1,19 +1,11 @@
 #include <algorithm>
 #include <cctype>
 #include <map>
-#include <functional>
 #include <set>
 #include <vector>
-#include <unordered_map>
 
 #include <ship/utils/StringHelper.h>
-#include <ship/utils/StrHash64.h>
 #include <ship/Context.h>
-#include <ship/resource/ResourceManager.h>
-#include <ship/resource/ResourceLoader.h>
-#include <ship/resource/archive/FolderArchive.h>
-#include <ship/resource/archive/O2rArchive.h>
-#include <ship/resource/archive/OtrArchive.h>
 
 #include "mod_menu.h"
 #include "soh/Network/Anchor/ClientModelLoader.h"

@@ -1,8 +1,5 @@
 #pragma once
 
-#include <string>
-#include <vector>
-
 #include <ship/window/gui/GuiWindow.h>
 
 #ifdef __cplusplus

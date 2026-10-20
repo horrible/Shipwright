@@ -129,8 +129,8 @@ bool GameInteractor::CanAddOrTakeAmmo(int16_t amount, int16_t item) {
         return true;
     } else {
         // Separate checks for beans and bombchus because they don't have capacity upgrades
-        if (INV_CONTENT(item) != item || (amount > 0 && ((item == ITEM_BOMBCHU && AMMO(item) == 50) ||
-                                                                (item == ITEM_BEAN && AMMO(item) == 10)))) {
+        if (INV_CONTENT(item) != item ||
+            (amount > 0 && ((item == ITEM_BOMBCHU && AMMO(item) == 50) || (item == ITEM_BEAN && AMMO(item) == 10)))) {
             return false;
         }
         return true;

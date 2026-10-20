@@ -176,6 +176,7 @@ void RegisterRocsFeather() {
         Player* player = GET_PLAYER(gPlayState);
 
         //z-targetting disables this because it interferes with sidehopping.
+        //button icon overwrite disabled in pause menu
         if ((player->stateFlags1 & (
                 PLAYER_STATE1_HOSTILE_LOCK_ON |
                 PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS |
