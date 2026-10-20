@@ -652,9 +652,9 @@ void Context::HandleGetRocsFeather() {
     bool rocsConsumable = Rando::Context::GetInstance()->GetOption(RSK_ROCS_FEATHER).Is(RO_ROCS_FEATHER_CONSUMABLE);
     static uint8_t& rocsMaxUse = mLogic->GetSaveContext()->ship.quest.data.randomizer.rocsFeathersAcquired;
     static uint8_t& rocsRemaining = mLogic->GetSaveContext()->ship.quest.data.randomizer.rocsFeathersRemaining;
+    Flags_SetRandomizerInf(RAND_INF_OBTAINED_ROCS_FEATHER);
 
     if (rocsMaxUse == 0) {
-        Flags_SetRandomizerInf(RAND_INF_OBTAINED_ROCS_FEATHER);
         rocsMaxUse = 0;
         rocsRemaining = 0;
     }

@@ -1,3 +1,5 @@
+#include <libultraship/bridge/consolevariablebridge.h>
+
 #include "soh/Enhancements/game-interactor/GameInteractor.h"
 #include "soh/Enhancements/randomizer/SeedContext.h"
 #include "soh/ShipInit.hpp"
@@ -111,8 +113,7 @@ void RegisterRocsFeather() {
                 action != DO_ACTION_THROW && 
                 !player->actor.bgCheckFlags & 1)) &&
             !(player->stateFlags1 & PLAYER_STATE1_CLIMBING_LADDER) &&
-            rocsRemaining > 0 && 
-            Rando::Context::GetInstance()->GetOption(RSK_ROCS_FEATHER_ON_A).Is(1)) {
+            rocsRemaining > 0 && CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) == 1) {
             *should = false;
 
             UseRocsFeather(player, playState);
@@ -189,7 +190,7 @@ void RegisterRocsFeather() {
                 action != DO_ACTION_THROW && 
                 !player->actor.bgCheckFlags & 1)) && 
             rocsRemaining > 0 && 
-            Rando::Context::GetInstance()->GetOption(RSK_ROCS_FEATHER_ON_A).Get() == 1) {
+            CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) == 1) {
             *should = true;
             *rgbaIcon = true;
             *alternateTexture = gRocsFeatherTex;

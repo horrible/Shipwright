@@ -1534,15 +1534,9 @@
                 ]
             },
             "rocs_feather_count": {
-                "name": "Quantity / Max Capacity",
+                "name": "Roc's Feather Quantity / Max Capacity",
                 "description": [
                     "If Roc's Feather is 'On' this will be the number of feathers in the pool. If Roc's Feather is 'Consumable' this will be the maximum you can carry at once."
-                ]
-            },
-            "rocs_feather_on_a": {
-                "name": "Roc's Feather on A",
-                "description": [
-                    "If Roc's Feather is enabled, have it usable with A whenever A would normally be blank."
                 ]
             },
             "nayrus_love_uses": {
