@@ -102,24 +102,28 @@ void RegisterRocsFeather() {
         PlayState* playState = va_arg(args, PlayState*);
         u16 action = playState->interfaceCtx.unk_1F0;
 
-        // Roc's Feather behaviour
         //z-targetting disables this because it interferes with sidehopping.
-        if (player->stateFlags1 & 
-            (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS | PLAYER_STATE1_PARALLEL)) {
-            
+        //button icon overwrite disabled in pause menu
+        if ((player->stateFlags1 & (
+                PLAYER_STATE1_HOSTILE_LOCK_ON |
+                PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS |
+                PLAYER_STATE1_PARALLEL)) ||
+            (gPlayState->pauseCtx.state > 0 && gPlayState->pauseCtx.state < 18)) {
+            *should = false;
         } else if ((action == DO_ACTION_NONE || (
-                action != DO_ACTION_DOWN && 
-                action != DO_ACTION_DROP && 
-                action != DO_ACTION_THROW && 
-                !player->actor.bgCheckFlags & 1)) &&
-            !(player->stateFlags1 & PLAYER_STATE1_CLIMBING_LADDER) &&
-            rocsRemaining > 0 && CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) == 1) {
+                action != DO_ACTION_DOWN &&
+                action != DO_ACTION_DROP &&
+                action != DO_ACTION_THROW &&
+                !(player->actor.bgCheckFlags & BGCHECKFLAG_GROUND))) &&
+                !(player->actor.bgCheckFlags & BGCHECKFLAG_WATER) &&
+            rocsRemaining > 0 &&
+            CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) == 1) {
             *should = false;
 
             UseRocsFeather(player, playState);
         }
     });
-    
+
 
     COND_VB_SHOULD(VB_DRAW_CUSTOM_ITEM_NAME, shouldRegister, {
         u32 namedItem = va_arg(args, u32);
@@ -158,7 +162,7 @@ void RegisterRocsFeather() {
             }
         }
     });
-    
+
     COND_VB_SHOULD(VB_COLOR_AMMO_GREEN, shouldRegister, {
         s16 item = va_arg(args, s16);
         if (item == ITEM_ROCS_FEATHER) {
@@ -172,7 +176,6 @@ void RegisterRocsFeather() {
 
     COND_VB_SHOULD(VB_SET_ACTION_TEXTURE, shouldRegister, {
         u16 action = *va_arg(args, u16*);
-        bool* rgbaIcon = va_arg(args, bool*);
         const char **alternateTexture = va_arg(args, const char**);
         Player* player = GET_PLAYER(gPlayState);
 
@@ -185,14 +188,14 @@ void RegisterRocsFeather() {
             (gPlayState->pauseCtx.state > 0 && gPlayState->pauseCtx.state < 18)) {
             *should = false;
         } else if ((action == DO_ACTION_NONE || (
-                action != DO_ACTION_DOWN && 
-                action != DO_ACTION_DROP && 
-                action != DO_ACTION_THROW && 
-                !player->actor.bgCheckFlags & 1)) && 
-            rocsRemaining > 0 && 
+                action != DO_ACTION_DOWN &&
+                action != DO_ACTION_DROP &&
+                action != DO_ACTION_THROW &&
+                !(player->actor.bgCheckFlags & BGCHECKFLAG_GROUND))) &&
+                !(player->actor.bgCheckFlags & BGCHECKFLAG_WATER) &&
+            rocsRemaining > 0 &&
             CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) == 1) {
             *should = true;
-            *rgbaIcon = true;
             *alternateTexture = gRocsFeatherTex;
         } else {
             *should = false;

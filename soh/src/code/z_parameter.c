@@ -6784,8 +6784,7 @@ void Interface_Update(PlayState* play) {
                 if ((action == DO_ACTION_MAX) || (action == DO_ACTION_MAX + 1)) {
                     action = DO_ACTION_NONE;
                 }
-                bool rgbaIcon = false;
-                if (!GameInteractor_Should(VB_SET_ACTION_TEXTURE , true, &action, &rgbaIcon, &interfaceCtx->doActionSegment[0])) {
+                if (!GameInteractor_Should(VB_SET_ACTION_TEXTURE , true, &action, &interfaceCtx->doActionSegment[0])) {
                     Interface_LoadActionLabel(interfaceCtx, action, 0);
                     interfaceCtx->unk_1FA &= ~(1 << 1);
                 } else {
@@ -6810,7 +6809,12 @@ void Interface_Update(PlayState* play) {
                 if ((action == DO_ACTION_MAX) || (action == DO_ACTION_MAX + 1)) {
                     action = DO_ACTION_NONE;
                 }
-                Interface_LoadActionLabel(interfaceCtx, action, 0);
+                if (!GameInteractor_Should(VB_SET_ACTION_TEXTURE , true, &action, &interfaceCtx->doActionSegment[0])) {
+                    Interface_LoadActionLabel(interfaceCtx, action, 0);
+                    interfaceCtx->unk_1FA &= ~(1 << 1);
+                } else {
+                    interfaceCtx->unk_1FA |= (1 << 1);
+                }
             }
             break;
     }

@@ -406,7 +406,6 @@ typedef enum {
     // A hook returning false should specify the replacement texture format and memory location
     // #### `args`
     // - `u16 action` (`DO_ACTION_<action>` - specified in `z64.h`'s `DoAction` struct)
-    // - `bool rgbaIcon` (false if should stay G_IM_FMT_IA, true if should be full color G_IM_FMT_RGBA)
     // - `char* alternateTexture` (pointer to load a specific 48 x16 or 32 x 32 texture for the icon from)
     VB_SET_ACTION_TEXTURE,
 
