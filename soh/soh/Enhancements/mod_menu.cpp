@@ -8,7 +8,6 @@
 #include <ship/Context.h>
 
 #include "mod_menu.h"
-#include "soh/Network/Anchor/ClientModelLoader.h"
 #include "soh/Enhancements/audio/OotrsArchive.h"
 #include "soh/OTRGlobals.h"
 #include "soh/util.h"
@@ -229,19 +228,7 @@ void UpdateModFiles(bool init = false, bool reset = false) {
             for (const std::filesystem::directory_entry& p : std::filesystem::recursive_directory_iterator(
                      modsPath, std::filesystem::directory_options::follow_directory_symlink)) {
                 if (p.is_directory()) {
-
-                    //add mods in ./mods/anchor to the list for anchor clients
-                    if (StringHelper::IEquals(p.path().filename().generic_string(), "anchor")) {
-                        PopulateClientModelList(p);
-                    }
                     continue;
-                } else if (p.path().parent_path().generic_string().find("anchor") != std::string::npos) {
-
-                    //exclude mods in ./mods/anchor from the main list load & modlist
-                    std::size_t index = p.path().parent_path().generic_string().find("anchor");
-                    if (index > 4 && p.path().parent_path().generic_string().substr(index - 5, 4) == "mods") {
-                        continue;
-                    }
                 }
                 std::string filename =
                     p.path().filename().generic_string().substr(0, p.path().filename().generic_string().rfind("."));

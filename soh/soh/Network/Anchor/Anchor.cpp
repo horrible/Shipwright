@@ -3,7 +3,6 @@
 #include "Anchor.h"
 #include "soh/Enhancements/nametag.h"
 #include "soh/ObjectExtension/ObjectExtension.h"
-#include "soh/Enhancements/mod_menu.h"
 
 extern "C" {
 #include "macros.h"
