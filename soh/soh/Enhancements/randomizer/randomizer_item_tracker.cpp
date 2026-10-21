@@ -593,6 +593,11 @@ ItemTrackerNumbers GetItemCurrentAndMax(ItemTrackerItem item) {
                 result.maxCapacity = 50;
                 result.currentAmmo = AMMO(ITEM_SLINGSHOT);
                 break;
+            case ITEM_ROCS_FEATHER:
+                result.currentCapacity = OTRGlobals::Instance->gRandoContext->GetRocsFeatherCapacity();
+                result.maxCapacity = OTRGlobals::Instance->gRandoContext->GetRocsFeatherCapacity();
+                result.currentAmmo = OTRGlobals::Instance->gRandoContext->GetRocsFeathersRemaining();
+                break;
             case ITEM_WALLET_ADULT:
             case ITEM_WALLET_GIANT:
                 result.currentCapacity =
@@ -729,6 +734,21 @@ void DrawItemCount(ItemTrackerItem item, bool hideMax) {
         ImGui::SetWindowFontScale(textScalingFactor);
 
         ImGui::Text(item.id == ITEM_HOOKSHOT ? "H" : "L");
+        ImGui::SetWindowFontScale(1.0f); // Reset font scale to the original state
+    } else if (actualItemId == ITEM_ROCS_FEATHER) {
+        const char* rocsAmmo = std::to_string(currentAndMax.maxCapacity).c_str();
+
+        // Calculate the scaled position for the text
+        ImVec2 textPos =
+            ImVec2(p.x + (iconSize >> 1) -
+                       (ImGui::CalcTextSize(rocsAmmo).x * textScalingFactor / 2) +
+                       8 * textScalingFactor,
+                   p.y - 22 * textScalingFactor);
+
+        ImGui::SetCursorScreenPos(textPos);
+        ImGui::SetWindowFontScale(textScalingFactor);
+
+        ImGui::Text(rocsAmmo);
         ImGui::SetWindowFontScale(1.0f); // Reset font scale to the original state
     }
 
