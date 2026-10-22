@@ -4961,59 +4961,46 @@ void Interface_DrawActionIcon(PlayState* play, f32 x, f32 y, void* texture) {
 
     gSP1Quadrangle(OVERLAY_DISP++, 0, 2, 3, 1, 0);
 
-    //todo - check for & show ammo counts a la Interface_DrawAmmoCount(PlayState* play, s16 button, s16 alpha) *and figure out how to do that*
-    /*
-    if (GameInteractor_Should(
-            VB_DRAW_AMMO_COUNT,
-            ((i == ITEM_STICK) || (i == ITEM_NUT) || (i == ITEM_BOMB) || (i == ITEM_BOW) ||
-             ((i >= ITEM_BOW_ARROW_FIRE) && (i <= ITEM_BOW_ARROW_LIGHT)) || (i == ITEM_SLINGSHOT) || (i == ITEM_BOMBCHU) || (i == ITEM_BEAN)),
-            &i)) {
-        if ((i >= ITEM_BOW_ARROW_FIRE) && (i <= ITEM_BOW_ARROW_LIGHT)) {
-            i = ITEM_BOW;
-        }
-
-        if (GameInteractor_Should(VB_OVERRIDE_AMMO_COUNT, true, &i, &ammo)) {
-            ammo = AMMO(i);
-        }
-
-        gDPPipeSync(OVERLAY_DISP++);
-
-        if ((button == 0) && (gSaveContext.minigameState == 1)) {
-            ammo = play->interfaceCtx.hbaAmmo;
-        } else if ((button == 0) && (play->shootingGalleryStatus > 1)) {
-            ammo = play->shootingGalleryStatus - 1;
-        } else if ((button == 0) && (play->sceneNum == SCENE_BOMBCHU_BOWLING_ALLEY) && Flags_GetSwitch(play, 0x38)) {
-            ammo = play->bombchuBowlingStatus;
-            if (ammo < 0) {
-                ammo = 0;
+    if (CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) == 1) {
+        //todo - substitute with item pulled from playstate or somewhere
+        s16 item = ITEM_ROCS_FEATHER;
+        if (GameInteractor_Should(VB_DRAW_AMMO_COUNT, false, &item)) {
+            s16 ammo = 0;
+            if (GameInteractor_Should(VB_OVERRIDE_AMMO_COUNT, true, &item, &ammo)) {
+                //todo - ditto if something lets standard items on a
             }
-        } else if (((i == ITEM_BOW) && (AMMO(i) == CUR_CAPACITY(UPG_QUIVER))) ||
-                   ((i == ITEM_BOMB) && (AMMO(i) == CUR_CAPACITY(UPG_BOMB_BAG))) ||
-                   ((i == ITEM_SLINGSHOT) && (AMMO(i) == CUR_CAPACITY(UPG_BULLET_BAG))) ||
-                   ((i == ITEM_STICK) && (AMMO(i) == CUR_CAPACITY(UPG_STICKS))) ||
-                   ((i == ITEM_NUT) && (AMMO(i) == CUR_CAPACITY(UPG_NUTS))) || ((i == ITEM_BOMBCHU) && (ammo == 50)) ||
-                   ((i == ITEM_BEAN) && (ammo == 15)) || GameInteractor_Should(VB_COLOR_AMMO_GREEN, false, i)) {
-            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 120, 255, 0, alpha);
-        }
 
-        if (ammo == 0) {
-            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 100, 100, 100, alpha);
-        }
+            gDPPipeSync(OVERLAY_DISP++);
 
-        for (i = 0; ammo >= 10; i++) {
-            ammo -= 10;
-        }
+            if (GameInteractor_Should(VB_COLOR_AMMO_GREEN, false, item)) {
+                gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 120, 255, 0, interfaceCtx->aAlpha);
+            }
 
-        if (i != 0) {
-            OVERLAY_DISP = Gfx_TextureIA8(OVERLAY_DISP, (u8*)_gAmmoDigit0Tex[i], 8, 8, ItemIconPos[button][0],
-                                          ItemIconPos[button][1], 8, 8, 1 << 10, 1 << 10);
-        }
+            //good enough i guess since i cba
+            s16 ammoX = x + 14;
+            s16 ammoY = y + 27;
 
-        OVERLAY_DISP = Gfx_TextureIA8(OVERLAY_DISP, (u8*)_gAmmoDigit0Tex[ammo], 8, 8, ItemIconPos[button][0] + 6,
-                                      ItemIconPos[button][1], 8, 8, 1 << 10, 1 << 10);
+            if (ammo == 0) {
+                gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 100, 100, 100, interfaceCtx->aAlpha);
+                OVERLAY_DISP = Gfx_TextureIA8(OVERLAY_DISP, (u8*)_gAmmoDigit0Tex[0], 8, 8, ammoX, ammoY, 8, 8, 1 << 10, 1 << 10);
+                } else {
+                if (ammo >= 100) {
+                    //well that's a lot of ammo. i don't think anything else in oot handles this? i certainly won't.
+                    ammo = ammo % 100;
+                }
+
+                u8 tens = ammo / 10;
+                u8 ones = ammo % 10;
+                //figure out correct skew for x & y since they're definitely not correct by default
+                if (tens > 0) {
+                    OVERLAY_DISP = Gfx_TextureIA8(OVERLAY_DISP, (u8*)_gAmmoDigit0Tex[tens], 8, 8, ammoX - 6, ammoY, 8, 8, 1 << 10, 1 << 10);
+                    OVERLAY_DISP = Gfx_TextureIA8(OVERLAY_DISP, (u8*)_gAmmoDigit0Tex[ones], 8, 8, ammoX, ammoY, 8, 8, 1 << 10, 1 << 10);
+                } else {
+                    OVERLAY_DISP = Gfx_TextureIA8(OVERLAY_DISP, (u8*)_gAmmoDigit0Tex[ones], 8, 8, ammoX, ammoY, 8, 8, 1 << 10, 1 << 10);
+                }
+            }
+        }
     }
-    */
-
     CLOSE_DISPS(play->state.gfxCtx);
 }
 
