@@ -101,22 +101,18 @@ void RegisterRocsFeather() {
         PlayState* playState = va_arg(args, PlayState*);
         u16 action = playState->interfaceCtx.unk_1F0;
 
-        // disabled when setting disabed, during z-targetting, while paused, when grounded and any action is displayed,
-        // while climbing ladders, when midair with something held, and when there are no rocs remaining to use
-        if ((player->stateFlags1 & (
-                PLAYER_STATE1_HOSTILE_LOCK_ON |
-                PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS |
-                PLAYER_STATE1_PARALLEL)) ||
-            (gPlayState->pauseCtx.state > 0 && gPlayState->pauseCtx.state < 18)) {
-            *should = false;
-        } else if ((action == DO_ACTION_NONE || (
-                action != DO_ACTION_DOWN &&
-                action != DO_ACTION_DROP &&
-                action != DO_ACTION_THROW &&
-                !(player->actor.bgCheckFlags & BGCHECKFLAG_GROUND))) &&
-                !(player->actor.bgCheckFlags & BGCHECKFLAG_WATER) &&
-            rocsRemaining > 0 &&
-            CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) == 1) {
+        // disabled when setting disabled, during z-targeting, while swimming, while paused,
+        // when grounded and any action is displayed, while climbing ladders, when midair with something held,
+        // and when there are no rocs remaining to use
+        if ((CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) != 1) ||
+            (player->stateFlags1 & (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS | PLAYER_STATE1_PARALLEL)) ||
+            (player->stateFlags1 & PLAYER_STATE1_IN_WATER) ||
+            (gPlayState->pauseCtx.state > 0 && gPlayState->pauseCtx.state < 18) ||
+            ((player->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && action != DO_ACTION_NONE) ||
+            (!(player->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && (action == DO_ACTION_DOWN || action == DO_ACTION_DROP || action == DO_ACTION_THROW)) ||
+            (rocsRemaining == 0)) {
+            *should = true;
+        } else {
             *should = false;
 
             UseRocsFeather(player, playState);
@@ -178,26 +174,20 @@ void RegisterRocsFeather() {
         const char **alternateTexture = va_arg(args, const char**);
         Player* player = GET_PLAYER(gPlayState);
 
-        // disabled when setting disabed, during z-targetting, while paused, when grounded and any action is displayed,
-        // while climbing ladders, when midair with something held, and when there are no rocs remaining to use
-        if ((player->stateFlags1 & (
-                PLAYER_STATE1_HOSTILE_LOCK_ON |
-                PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS |
-                PLAYER_STATE1_PARALLEL)) ||
-            (gPlayState->pauseCtx.state > 0 && gPlayState->pauseCtx.state < 18)) {
+        // disabled when setting disabled, during z-targeting, while swimming, while paused,
+        // when grounded and any action is displayed, while climbing ladders, when midair with something held,
+        // and when there are no rocs remaining to use
+        if ((CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) != 1) ||
+            (player->stateFlags1 & (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS | PLAYER_STATE1_PARALLEL)) ||
+            (player->stateFlags1 & PLAYER_STATE1_IN_WATER) ||
+            (gPlayState->pauseCtx.state > 0 && gPlayState->pauseCtx.state < 18) ||
+            ((player->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && action != DO_ACTION_NONE) ||
+            (!(player->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && (action == DO_ACTION_DOWN || action == DO_ACTION_DROP || action == DO_ACTION_THROW)) ||
+            (rocsRemaining == 0)) {
             *should = false;
-        } else if ((action == DO_ACTION_NONE || (
-                action != DO_ACTION_DOWN &&
-                action != DO_ACTION_DROP &&
-                action != DO_ACTION_THROW &&
-                !(player->actor.bgCheckFlags & BGCHECKFLAG_GROUND))) &&
-                !(player->actor.bgCheckFlags & BGCHECKFLAG_WATER) &&
-            rocsRemaining > 0 &&
-            CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) == 1) {
+        } else {
             *should = true;
             *alternateTexture = gRocsFeatherTex;
-        } else {
-            *should = false;
         }
     });
 }

@@ -2879,7 +2879,7 @@ void Interface_LoadActionLabelB(PlayState* play, u16 action) {
     interfaceCtx->doActionSegment[1] = action != DO_ACTION_NONE ? doAction : gEmptyTexture;
     osRecvMesg(&interfaceCtx->loadQueue, NULL, OS_MESG_BLOCK);
 
-    interfaceCtx->unk_1FA |= 1;
+    interfaceCtx->unk_1FA |= (1 << 0);
 }
 
 s32 Health_ChangeBy(PlayState* play, s16 healthChange) {
