@@ -26,7 +26,6 @@ void UseRocsFeather(Player* player, PlayState* playState) {
     if (rocsRemaining > 0) {
         rocsRemaining--;
 
-
         func_80838940(player, (LinkAnimationHeader*)&gPlayerAnim_link_rocs_feather_jump, 5.8f, playState, 0);
 
         // Actionvar needed to prevent weird animation morph
@@ -102,8 +101,8 @@ void RegisterRocsFeather() {
         PlayState* playState = va_arg(args, PlayState*);
         u16 action = playState->interfaceCtx.unk_1F0;
 
-        //z-targetting disables this because it interferes with sidehopping.
-        //button icon overwrite disabled in pause menu
+        // disabled when setting disabed, during z-targetting, while paused, when grounded and any action is displayed,
+        // while climbing ladders, when midair with something held, and when there are no rocs remaining to use
         if ((player->stateFlags1 & (
                 PLAYER_STATE1_HOSTILE_LOCK_ON |
                 PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS |
@@ -179,8 +178,8 @@ void RegisterRocsFeather() {
         const char **alternateTexture = va_arg(args, const char**);
         Player* player = GET_PLAYER(gPlayState);
 
-        //z-targetting disables this because it interferes with sidehopping.
-        //button icon overwrite disabled in pause menu
+        // disabled when setting disabed, during z-targetting, while paused, when grounded and any action is displayed,
+        // while climbing ladders, when midair with something held, and when there are no rocs remaining to use
         if ((player->stateFlags1 & (
                 PLAYER_STATE1_HOSTILE_LOCK_ON |
                 PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS |

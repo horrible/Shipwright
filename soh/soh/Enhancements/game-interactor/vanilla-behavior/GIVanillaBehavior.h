@@ -4228,5 +4228,4 @@ typedef enum {
     // - none
     VB_EMPTY_BOTTLE_OI,
 
-
 } GIVanillaBehavior;

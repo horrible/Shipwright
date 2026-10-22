@@ -1430,7 +1430,6 @@ extern "C" u16 Randomizer_Item_Give(PlayState* play, GetItemEntry giEntry) {
         case RG_ROCS_FEATHER:
             if (INV_CONTENT(ITEM_NAYRUS_LOVE) == ITEM_NONE) {
                 INV_CONTENT(ITEM_NAYRUS_LOVE) = ITEM_ROCS_FEATHER;
-            } else {
             }
             OTRGlobals::Instance->gRandoContext->HandleGetRocsFeather();
             break;

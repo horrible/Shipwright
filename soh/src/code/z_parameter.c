@@ -4481,11 +4481,11 @@ void Interface_DrawItemIconTexture(PlayState* play, void* texture, s16 button) {
                                interfaceCtx->cDownAlpha,    interfaceCtx->dpadUpAlpha,   interfaceCtx->dpadDownAlpha,
                                interfaceCtx->dpadLeftAlpha, interfaceCtx->dpadRightAlpha };
     s16 DPad_ItemsOffset[4][2] = {
-        { 7, -8 }, // Up
-        { 7, 24 }, // Down
-        { -9, 8 }, // Left
-        { 23, 8 }, // Right
-    }; //(X,Y) Used with custom position to place it properly.
+        { 7, -8 },         // Up
+        { 7, 24 },         // Down
+        { -9, 8 },         // Left
+        { 23, 8 },         // Right
+    };                     //(X,Y) Used with custom position to place it properly.
     s16 ItemIconPos[8][2]; //(X,Y)
     // DPadItems
     if (CVarGetInteger(CVAR_COSMETIC("HUD.Dpad.PosType"), 0) != ORIGINAL_LOCATION) {
@@ -4733,7 +4733,7 @@ void Interface_DrawAmmoCount(PlayState* play, s16 button, s16 alpha) {
         { 7, 35 },  // Down
         { -9, 19 }, // Left
         { 23, 19 }, // Right
-    }; //(X,Y) Used with custom position to place it properly.
+    };              //(X,Y) Used with custom position to place it properly.
     // DPadItems
     if (CVarGetInteger(CVAR_COSMETIC("HUD.Dpad.PosType"), 0) != ORIGINAL_LOCATION) {
         ItemIconPos[4][1] =
@@ -4892,11 +4892,11 @@ void Interface_DrawAmmoCount(PlayState* play, s16 button, s16 alpha) {
 
     i = gSaveContext.equips.buttonItems[button];
 
-    if (GameInteractor_Should(
-            VB_DRAW_AMMO_COUNT,
-            ((i == ITEM_STICK) || (i == ITEM_NUT) || (i == ITEM_BOMB) || (i == ITEM_BOW) ||
-             ((i >= ITEM_BOW_ARROW_FIRE) && (i <= ITEM_BOW_ARROW_LIGHT)) || (i == ITEM_SLINGSHOT) || (i == ITEM_BOMBCHU) || (i == ITEM_BEAN)),
-            &i)) {
+    if (GameInteractor_Should(VB_DRAW_AMMO_COUNT,
+                              ((i == ITEM_STICK) || (i == ITEM_NUT) || (i == ITEM_BOMB) || (i == ITEM_BOW) ||
+                               ((i >= ITEM_BOW_ARROW_FIRE) && (i <= ITEM_BOW_ARROW_LIGHT)) || (i == ITEM_SLINGSHOT) ||
+                               (i == ITEM_BOMBCHU) || (i == ITEM_BEAN)),
+                              &i)) {
         if ((i >= ITEM_BOW_ARROW_FIRE) && (i <= ITEM_BOW_ARROW_LIGHT)) {
             i = ITEM_BOW;
         }
@@ -4959,8 +4959,60 @@ void Interface_DrawActionIcon(PlayState* play, f32 x, f32 y, void* texture) {
     gDPLoadTextureBlock(OVERLAY_DISP++, texture, G_IM_FMT_RGBA, G_IM_SIZ_32b, 32, 32, 0, G_TX_NOMIRROR | G_TX_WRAP,
                         G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
 
-    //stop copying the b button here since we still want it to be able to flip and such
     gSP1Quadrangle(OVERLAY_DISP++, 0, 2, 3, 1, 0);
+
+    //todo - check for & show ammo counts a la Interface_DrawAmmoCount(PlayState* play, s16 button, s16 alpha) *and figure out how to do that*
+    /*
+    if (GameInteractor_Should(
+            VB_DRAW_AMMO_COUNT,
+            ((i == ITEM_STICK) || (i == ITEM_NUT) || (i == ITEM_BOMB) || (i == ITEM_BOW) ||
+             ((i >= ITEM_BOW_ARROW_FIRE) && (i <= ITEM_BOW_ARROW_LIGHT)) || (i == ITEM_SLINGSHOT) || (i == ITEM_BOMBCHU) || (i == ITEM_BEAN)),
+            &i)) {
+        if ((i >= ITEM_BOW_ARROW_FIRE) && (i <= ITEM_BOW_ARROW_LIGHT)) {
+            i = ITEM_BOW;
+        }
+
+        if (GameInteractor_Should(VB_OVERRIDE_AMMO_COUNT, true, &i, &ammo)) {
+            ammo = AMMO(i);
+        }
+
+        gDPPipeSync(OVERLAY_DISP++);
+
+        if ((button == 0) && (gSaveContext.minigameState == 1)) {
+            ammo = play->interfaceCtx.hbaAmmo;
+        } else if ((button == 0) && (play->shootingGalleryStatus > 1)) {
+            ammo = play->shootingGalleryStatus - 1;
+        } else if ((button == 0) && (play->sceneNum == SCENE_BOMBCHU_BOWLING_ALLEY) && Flags_GetSwitch(play, 0x38)) {
+            ammo = play->bombchuBowlingStatus;
+            if (ammo < 0) {
+                ammo = 0;
+            }
+        } else if (((i == ITEM_BOW) && (AMMO(i) == CUR_CAPACITY(UPG_QUIVER))) ||
+                   ((i == ITEM_BOMB) && (AMMO(i) == CUR_CAPACITY(UPG_BOMB_BAG))) ||
+                   ((i == ITEM_SLINGSHOT) && (AMMO(i) == CUR_CAPACITY(UPG_BULLET_BAG))) ||
+                   ((i == ITEM_STICK) && (AMMO(i) == CUR_CAPACITY(UPG_STICKS))) ||
+                   ((i == ITEM_NUT) && (AMMO(i) == CUR_CAPACITY(UPG_NUTS))) || ((i == ITEM_BOMBCHU) && (ammo == 50)) ||
+                   ((i == ITEM_BEAN) && (ammo == 15)) || GameInteractor_Should(VB_COLOR_AMMO_GREEN, false, i)) {
+            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 120, 255, 0, alpha);
+        }
+
+        if (ammo == 0) {
+            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 100, 100, 100, alpha);
+        }
+
+        for (i = 0; ammo >= 10; i++) {
+            ammo -= 10;
+        }
+
+        if (i != 0) {
+            OVERLAY_DISP = Gfx_TextureIA8(OVERLAY_DISP, (u8*)_gAmmoDigit0Tex[i], 8, 8, ItemIconPos[button][0],
+                                          ItemIconPos[button][1], 8, 8, 1 << 10, 1 << 10);
+        }
+
+        OVERLAY_DISP = Gfx_TextureIA8(OVERLAY_DISP, (u8*)_gAmmoDigit0Tex[ammo], 8, 8, ItemIconPos[button][0] + 6,
+                                      ItemIconPos[button][1], 8, 8, 1 << 10, 1 << 10);
+    }
+    */
 
     CLOSE_DISPS(play->state.gfxCtx);
 }
@@ -5751,7 +5803,7 @@ void Interface_Draw(PlayState* play) {
         gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 255, interfaceCtx->aAlpha);
         gDPSetEnvColor(OVERLAY_DISP++, 0, 0, 0, 0);
 
-        //bit set in Interface_LoadActionLabel if there's a manual override to show an icon
+        //bit set to 1 if VB_SET_ACTION_TEXTURE override is to show an icon rather than text
         if (interfaceCtx->unk_1FA & (1 << 1)) {
             Interface_DrawActionIcon(play, PosX_BtnA, PosY_BtnA, interfaceCtx->doActionSegment[0]);
         } else {
