@@ -22,7 +22,7 @@ static uint8_t groundTimer = 0;
 static f32 effectsScale = 1.0f;
 static bool rocsConsumable = false;
 
-void UseRocsFeather(Player* player, PlayState* playState) {
+void UseRocsFeather(PlayState* playState, Player* player) {
     if (rocsRemaining > 0) {
         rocsRemaining--;
 
@@ -92,30 +92,48 @@ void RegisterRocsFeather() {
 
             Player* player = GET_PLAYER(gPlayState);
 
-            UseRocsFeather(player, gPlayState);
+            UseRocsFeather(gPlayState, player);
         }
     });
 
     COND_VB_SHOULD(VB_CHANGE_ACTION_AND_USE, shouldRegister, {
+        LUSLOG_WARN("LIZDEBUG !!! VB_CHANGE_ACTION_AND_USE!!! %d", CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0));
+
+        if (CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) != 1) {
+            *should = true;
+            return;
+        }
+
         Player* player = va_arg(args, Player*);
         PlayState* playState = va_arg(args, PlayState*);
-        u16 action = playState->interfaceCtx.unk_1F0;
+        Input* input = &playState->state.input[0];
+        LUSLOG_WARN("LIZDEBUG !!! CHECK_BTN_ANY(input->press.button, BTN_A)!!! %d", CHECK_BTN_ANY(input->press.button, BTN_A));
 
-        // disabled when setting disabled, during z-targeting, while swimming, while paused,
-        // when grounded and any action is displayed, while climbing ladders, when midair with something held,
+        u16 action = playState->interfaceCtx.unk_1F0;
+        LUSLOG_WARN("LIZDEBUG !!! playState->interfaceCtx.unk_1F0!!! %d", action);
+
+        // disabled during z-targeting, while swimming, while paused, when grounded and any
+        // action is displayed, while climbing ladders, when midair with something held,
         // and when there are no rocs remaining to use
-        if ((CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) != 1) ||
-            (player->stateFlags1 & (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS | PLAYER_STATE1_PARALLEL)) ||
+        if ((player->stateFlags1 & (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS | PLAYER_STATE1_PARALLEL)) ||
             (player->stateFlags1 & PLAYER_STATE1_IN_WATER) ||
-            (gPlayState->pauseCtx.state > 0 && gPlayState->pauseCtx.state < 18) ||
+            (playState->pauseCtx.state > 0 && playState->pauseCtx.state < 18) ||
             ((player->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && action != DO_ACTION_NONE) ||
             (!(player->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && (action == DO_ACTION_DOWN || action == DO_ACTION_DROP || action == DO_ACTION_THROW)) ||
             (rocsRemaining == 0)) {
             *should = true;
-        } else {
-            *should = false;
 
-            UseRocsFeather(player, playState);
+        } else {
+
+            if (CHECK_BTN_ANY(input->press.button, BTN_A)) {
+                *should = false;
+                UseRocsFeather(playState, player);
+
+            } else if (!(CHECK_BTN_ANY(input->press.button, BTN_A)) &&
+                player->actor.bgCheckFlags & ( BGCHECKFLAG_GROUND_LEAVE | BGCHECKFLAG_GROUND_TOUCH)) {
+                *should = false;
+                playState->interfaceCtx.unk_1F0 = DO_ACTION_NONE;
+            }
         }
     });
 
@@ -170,15 +188,21 @@ void RegisterRocsFeather() {
     });
 
     COND_VB_SHOULD(VB_SET_ACTION_TEXTURE, shouldRegister, {
+        LUSLOG_WARN("LIZDEBUG !!! VB_SET_ACTION_TEXTURE!!! %d", CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0));
+        if (CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) != 1) {
+            *should = false;
+            return;
+        }
+
         u16 action = *va_arg(args, u16*);
         const char **alternateTexture = va_arg(args, const char**);
         Player* player = GET_PLAYER(gPlayState);
 
-        // disabled when setting disabled, during z-targeting, while swimming, while paused,
-        // when grounded and any action is displayed, while climbing ladders, when midair with something held,
+
+        // disabled during z-targeting, while swimming, while paused, when grounded and any
+        // action is displayed, while climbing ladders, when midair with something held,
         // and when there are no rocs remaining to use
-        if ((CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) != 1) ||
-            (player->stateFlags1 & (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS | PLAYER_STATE1_PARALLEL)) ||
+        if ((player->stateFlags1 & (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS | PLAYER_STATE1_PARALLEL)) ||
             (player->stateFlags1 & PLAYER_STATE1_IN_WATER) ||
             (gPlayState->pauseCtx.state > 0 && gPlayState->pauseCtx.state < 18) ||
             ((player->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && action != DO_ACTION_NONE) ||

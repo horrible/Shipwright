@@ -403,10 +403,12 @@ typedef enum {
     // true
     // ```
     // Whether the default texture for a given action on the A button should be used.
-    // A hook returning false should specify the replacement texture format and memory location
+    // A hook returning false must specify a replacement icon texture pointer.
+    // A hook returning true /may/ change action's target to alter the text texture shown.
+    // Interface_LoadActionLabel
     // #### `args`
-    // - `u16 action` (`DO_ACTION_<action>` - specified in `z64.h`'s `DoAction` struct)
-    // - `char* alternateTexture` (pointer to load a specific 48 x16 or 32 x 32 texture for the icon from)
+    // - `u16* action` (`DO_ACTION_<action>` - specified in `z64.h`'s `DoAction` struct)
+    // - `const char** alternateTexture` (pointer to a 32 x 32 G_IM_FMT_RGBA texture)
     VB_SET_ACTION_TEXTURE,
 
     // #### `result`

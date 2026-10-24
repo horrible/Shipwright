@@ -9657,8 +9657,8 @@ void Player_Action_8084411C(Player* this, PlayState* play) {
             }
         }
 
-        // check for interactions on A while midair, exit early if one is triggered
-        if(CHECK_BTN_ANY(sControlInput->press.button, BTN_A) && !GameInteractor_Should(VB_CHANGE_ACTION_AND_USE, true, this, play)) {
+        //check for interactions on A while midair, exit early if one is triggered
+        if(!GameInteractor_Should(VB_CHANGE_ACTION_AND_USE, true, this, play)) {
             return;
         }
 
@@ -10994,8 +10994,6 @@ void Player_UpdateInterface(PlayState* play, Player* this) {
                 if (this->unk_860 == 2) {
                     doAction = DO_ACTION_REEL;
                 }
-            } else if (this->actor.bgCheckFlags & ( BGCHECKFLAG_GROUND_LEAVE | BGCHECKFLAG_GROUND_TOUCH)) {
-                doAction = DO_ACTION_NONE;
             } else if ((Player_Action_8084E3C4 != this->actionFunc) && !(this->stateFlags2 & PLAYER_STATE2_CRAWLING)) {
                 if ((this->doorType != PLAYER_DOORTYPE_NONE) &&
                     (!(this->stateFlags1 & PLAYER_STATE1_CARRYING_ACTOR) ||
