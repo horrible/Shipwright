@@ -97,7 +97,6 @@ void RegisterRocsFeather() {
     });
 
     COND_VB_SHOULD(VB_CHANGE_ACTION_AND_USE, shouldRegister, {
-        LUSLOG_WARN("LIZDEBUG !!! VB_CHANGE_ACTION_AND_USE!!! %d", CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0));
 
         if (CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) != 1) {
             *should = true;
@@ -107,10 +106,8 @@ void RegisterRocsFeather() {
         Player* player = va_arg(args, Player*);
         PlayState* playState = va_arg(args, PlayState*);
         Input* input = &playState->state.input[0];
-        LUSLOG_WARN("LIZDEBUG !!! CHECK_BTN_ANY(input->press.button, BTN_A)!!! %d", CHECK_BTN_ANY(input->press.button, BTN_A));
 
         u16 action = playState->interfaceCtx.unk_1F0;
-        LUSLOG_WARN("LIZDEBUG !!! playState->interfaceCtx.unk_1F0!!! %d", action);
 
         // disabled during z-targeting, while swimming, while paused, when grounded and any
         // action is displayed, while climbing ladders, when midair with something held,
@@ -188,7 +185,6 @@ void RegisterRocsFeather() {
     });
 
     COND_VB_SHOULD(VB_SET_ACTION_TEXTURE, shouldRegister, {
-        LUSLOG_WARN("LIZDEBUG !!! VB_SET_ACTION_TEXTURE!!! %d", CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0));
         if (CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) != 1) {
             *should = false;
             return;
