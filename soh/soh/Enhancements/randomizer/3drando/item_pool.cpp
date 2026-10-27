@@ -436,10 +436,9 @@ void GenerateItemPool() {
     }
 
     if (ctx->GetOption(RSK_ROCS_FEATHER).Is(RO_ROCS_FEATHER_ON)) {
-        uint8_t feathers = ctx->GetOption(RSK_ROCS_FEATHER_COUNT).Get()+1;
+        uint8_t feathers = ctx->GetOption(RSK_ROCS_FEATHER_COUNT).Get();
         AddItemToPool(RG_ROCS_FEATHER, feathers, feathers, feathers, feathers);
     } else if (ctx->GetOption(RSK_ROCS_FEATHER).Is(RO_ROCS_FEATHER_CONSUMABLE)) {
-        JunkPoolItems.emplace_back(RG_ROCS_FEATHER);
         JunkPoolItems.emplace_back(RG_ROCS_FEATHER);
         JunkPoolItems.emplace_back(RG_ROCS_FEATHER);
     }

@@ -1,6 +1,7 @@
 #include <ship/window/gui/IconsFontAwesome4.h>
 
 #include "Anchor.h"
+#include "ClientModelLoader.h"
 #include "soh/OTRGlobals.h"
 #include "soh/util.h"
 #include "soh/Enhancements/randomizer/SeedContext.h"
@@ -8,6 +9,7 @@
 extern "C" {
 extern PlayState* gPlayState;
 }
+
 
 void AnchorRoomWindow::Draw() {
     if (!IsVisible() || !Anchor::Instance->isConnected) {
@@ -81,6 +83,20 @@ void AnchorRoomWindow::DrawElement() {
             } else {
                 ImGui::Text("%s", client.name.c_str());
             }
+            ImGui::SameLine();
+            ImGui::BeginDisabled(client.self);
+            const char* selected_item =
+                client.self ? "(auto)" : std::get<0>(clientMods[client.altModelIndex]).c_str();
+            if (ImGui::BeginCombo("##clientModSelector", selected_item)) {
+                for (size_t i = 0; i < clientMods.size(); i++) {
+                    const char* name = std::get<0>(clientMods[i]).c_str();
+                    if (ImGui::Selectable(name, client.altModelIndex == i)) {
+                        client.altModelIndex = (u8)i;
+                    }
+                }
+                ImGui::EndCombo();
+            }
+            ImGui::EndDisabled();
 
             if (Anchor::Instance->roomState.showLocationsMode == 2 ||
                 (Anchor::Instance->roomState.showLocationsMode == 1 && isOwnTeam)) {

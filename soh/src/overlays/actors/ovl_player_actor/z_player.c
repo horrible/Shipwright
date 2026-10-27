@@ -36,6 +36,7 @@
 #include <assert.h>
 #include <libultraship/bridge/consolevariablebridge.h>
 
+
 // Some player animations are played at this reduced speed, for reasons yet unclear.
 // This is called "adjusted" for now.
 #define PLAYER_ANIM_ADJUSTED_SPEED (2.0f / 3.0f)
@@ -6438,7 +6439,7 @@ void func_8083C148(Player* this, PlayState* play) {
 }
 
 /**
- * Handles setting up a roll if it is appropriate.
+ * Handles setting up a roll if it is appropriate. Runs while grounded.
  *
  * If a roll is not applicable, there are two extra behaviors that could occur:
  * - If an item is currently held in hand, it can be put away.
@@ -6448,7 +6449,7 @@ void func_8083C148(Player* this, PlayState* play) {
  * These extra behaviors are not new actions themselves, so they will result in `false` being returned
  * even if they occur.
  */
-s32 Player_ActionHandler_Roll(Player* this, PlayState* play) {
+s32 Player_ActionHandler_Roll(Player* this, PlayState* play ) {
     if (!Player_UpdateHostileLockOn(this) && !sUpperBodyIsBusy && !(this->stateFlags1 & PLAYER_STATE1_ON_HORSE) &&
         CHECK_BTN_ALL(sControlInput->press.button, BTN_A)) {
         if (Player_TryRoll(this, play)) {
@@ -7905,6 +7906,7 @@ void func_8083FB7C(Player* this, PlayState* play) {
     this->linearVelocity = -0.4f;
 }
 
+//every frame? while airborne and climbing?
 s32 func_8083FBC0(Player* this, PlayState* play) {
     if (!CHECK_BTN_ALL(sControlInput->press.button, BTN_A) &&
         (this->actor.bgCheckFlags & BGCHECKFLAG_PLAYER_WALL_INTERACT) &&
@@ -9631,6 +9633,7 @@ void func_8084409C(PlayState* play, Player* this, f32 speedXZ, f32 velocityY) {
     }
 }
 
+//every frame? while airborne and not (yet) climbing? high latency?
 void Player_Action_8084411C(Player* this, PlayState* play) {
     f32 sp4C;
     s16 sp4A;
@@ -9655,6 +9658,11 @@ void Player_Action_8084411C(Player* this, PlayState* play) {
                 CHECK_BTN_ANY(sControlInput->press.button, buttonsToCheck)) {
                 func_8084409C(play, this, this->linearVelocity + 2.0f, this->actor.velocity.y + 2.0f);
             }
+        }
+        
+        //exit early if jumping
+        if(CHECK_BTN_ANY(sControlInput->press.button, BTN_A) && !GameInteractor_Should(VB_CHANGE_ACTION_AND_USE, true, this, play)) {
+            return;
         }
 
         // check for interactions on A while midair, exit early if one is triggered
@@ -10987,6 +10995,7 @@ void Player_UpdateInterface(PlayState* play, Player* this) {
         s32 sp1C = func_808332B8(this);
         s32 doAction = DO_ACTION_NONE;
 
+        
         if (!Player_InBlockingCsMode(play, this)) {
             if (this->stateFlags1 & PLAYER_STATE1_FIRST_PERSON) {
                 doAction = DO_ACTION_RETURN;
@@ -10994,6 +11003,8 @@ void Player_UpdateInterface(PlayState* play, Player* this) {
                 if (this->unk_860 == 2) {
                     doAction = DO_ACTION_REEL;
                 }
+            } else if (this->actor.bgCheckFlags & ( BGCHECKFLAG_GROUND_LEAVE | BGCHECKFLAG_GROUND_TOUCH)) {
+                doAction = DO_ACTION_NONE;
             } else if ((Player_Action_8084E3C4 != this->actionFunc) && !(this->stateFlags2 & PLAYER_STATE2_CRAWLING)) {
                 if ((this->doorType != PLAYER_DOORTYPE_NONE) &&
                     (!(this->stateFlags1 & PLAYER_STATE1_CARRYING_ACTOR) ||

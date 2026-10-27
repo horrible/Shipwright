@@ -14,15 +14,18 @@ extern PlayState* gPlayState;
 extern SaveContext gSaveContext;
 }
 
+#define MAX_ROCS_USES 1
+
 static uint8_t& rocsMaxUse = gSaveContext.ship.quest.data.randomizer.rocsFeathersAcquired;
 static uint8_t& rocsRemaining = gSaveContext.ship.quest.data.randomizer.rocsFeathersRemaining;
 static uint8_t groundTimer = 0;
 static f32 effectsScale = 1.0f;
 static bool rocsConsumable = false;
 
-void UseRocsFeather(PlayState* playState, Player* player) {
+void UseRocsFeather(Player* player, PlayState* playState) {
     if (rocsRemaining > 0) {
         rocsRemaining--;
+
 
         func_80838940(player, (LinkAnimationHeader*)&gPlayerAnim_link_rocs_feather_jump, 5.8f, playState, 0);
 
@@ -45,7 +48,7 @@ void UseRocsFeather(PlayState* playState, Player* player) {
         effectsPos.y += 3;
 
         EffectSsGRipple_Spawn(playState, &effectsPos, static_cast<s16>(200 * effectsScale),
-                              static_cast<s16>(300 * effectsScale), 1);
+                                static_cast<s16>(300 * effectsScale), 1);
         EffectSsGSplash_Spawn(playState, &effectsPos, NULL, NULL, 0, static_cast<s16>(150 * effectsScale));
 
         // Remove hopping state when using Roc's after sidehop/backflip to allow grabbing ledges again
@@ -90,48 +93,33 @@ void RegisterRocsFeather() {
 
             Player* player = GET_PLAYER(gPlayState);
 
-            UseRocsFeather(gPlayState, player);
+            UseRocsFeather(player, gPlayState);
         }
     });
 
     COND_VB_SHOULD(VB_CHANGE_ACTION_AND_USE, shouldRegister, {
-        if (CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) != 1) {
-            *should = true;
-            return;
-        }
-
         Player* player = va_arg(args, Player*);
         PlayState* playState = va_arg(args, PlayState*);
-        Input* input = &playState->state.input[0];
-
         u16 action = playState->interfaceCtx.unk_1F0;
 
-        // disabled during z-targeting, while swimming, while paused, when grounded and any
-        // action is displayed, while climbing ladders, when midair with something held,
-        // while crawling, and when there are no rocs remaining to use
-        if ((player->stateFlags1 &
-             (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS | PLAYER_STATE1_PARALLEL)) ||
-            (player->stateFlags1 & PLAYER_STATE1_IN_WATER) || (player->stateFlags2 & PLAYER_STATE2_CRAWLING) ||
-            (playState->pauseCtx.state > 0 && playState->pauseCtx.state < 18) ||
-            ((player->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && action != DO_ACTION_NONE) ||
-            (!(player->actor.bgCheckFlags & BGCHECKFLAG_GROUND) &&
-             (action == DO_ACTION_DOWN || action == DO_ACTION_DROP || action == DO_ACTION_THROW)) ||
-            (rocsRemaining == 0)) {
-            *should = true;
+        // Roc's Feather behaviour
+        //z-targetting disables this because it interferes with sidehopping.
+        if (player->stateFlags1 & 
+            (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS | PLAYER_STATE1_PARALLEL)) {
+            
+        } else if ((action == DO_ACTION_NONE || (
+                action != DO_ACTION_DOWN && 
+                action != DO_ACTION_DROP && 
+                action != DO_ACTION_THROW && 
+                !player->actor.bgCheckFlags & 1)) &&
+            !(player->stateFlags1 & PLAYER_STATE1_CLIMBING_LADDER) &&
+            rocsRemaining > 0 && CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) == 1) {
+            *should = false;
 
-        } else {
-
-            if (CHECK_BTN_ANY(input->press.button, BTN_A)) {
-                *should = false;
-                UseRocsFeather(playState, player);
-
-            } else if (!(CHECK_BTN_ANY(input->press.button, BTN_A)) &&
-                       player->actor.bgCheckFlags & (BGCHECKFLAG_GROUND_LEAVE | BGCHECKFLAG_GROUND_TOUCH)) {
-                *should = false;
-                playState->interfaceCtx.unk_1F0 = DO_ACTION_NONE;
-            }
+            UseRocsFeather(player, playState);
         }
     });
+    
 
     COND_VB_SHOULD(VB_DRAW_CUSTOM_ITEM_NAME, shouldRegister, {
         u32 namedItem = va_arg(args, u32);
@@ -153,7 +141,7 @@ void RegisterRocsFeather() {
         int16_t item = *va_arg(args, int16_t*);
         int16_t* ammo = va_arg(args, int16_t*);
         if (item == ITEM_ROCS_FEATHER) {
-            if (rocsConsumable || rocsMaxUse != 1) {
+            if (rocsMaxUse > 1) {
                 *should = false;
                 *ammo = rocsRemaining;
             }
@@ -163,14 +151,14 @@ void RegisterRocsFeather() {
     COND_VB_SHOULD(VB_DRAW_AMMO_COUNT, shouldRegister, {
         s16 item = *va_arg(args, s16*);
         if (item == ITEM_ROCS_FEATHER) {
-            if (rocsConsumable || rocsMaxUse != 1) {
+            if (rocsMaxUse > 1) {
                 *should = true;
             } else {
                 *should = false;
             }
         }
     });
-
+    
     COND_VB_SHOULD(VB_COLOR_AMMO_GREEN, shouldRegister, {
         s16 item = va_arg(args, s16);
         if (item == ITEM_ROCS_FEATHER) {
@@ -183,30 +171,31 @@ void RegisterRocsFeather() {
     });
 
     COND_VB_SHOULD(VB_SET_ACTION_TEXTURE, shouldRegister, {
-        if (CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) != 1) {
-            *should = false;
-            return;
-        }
-
         u16 action = *va_arg(args, u16*);
-        const char** alternateTexture = va_arg(args, const char**);
+        bool* rgbaIcon = va_arg(args, bool*);
+        const char **alternateTexture = va_arg(args, const char**);
         Player* player = GET_PLAYER(gPlayState);
 
-        // disabled during z-targeting, while swimming, while paused, when grounded and any
-        // action is displayed, while climbing ladders, when midair with something held,
-        // while crawling, and when there are no rocs remaining to use
-        if ((player->stateFlags1 &
-             (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS | PLAYER_STATE1_PARALLEL)) ||
-            (player->stateFlags1 & PLAYER_STATE1_IN_WATER) || (player->stateFlags2 & PLAYER_STATE2_CRAWLING) ||
-            (gPlayState->pauseCtx.state > 0 && gPlayState->pauseCtx.state < 18) ||
-            ((player->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && action != DO_ACTION_NONE) ||
-            (!(player->actor.bgCheckFlags & BGCHECKFLAG_GROUND) &&
-             (action == DO_ACTION_DOWN || action == DO_ACTION_DROP || action == DO_ACTION_THROW)) ||
-            (rocsRemaining == 0)) {
+        //z-targetting disables this because it interferes with sidehopping.
+        //button icon overwrite disabled in pause menu
+        if ((player->stateFlags1 & (
+                PLAYER_STATE1_HOSTILE_LOCK_ON |
+                PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS |
+                PLAYER_STATE1_PARALLEL)) ||
+            (gPlayState->pauseCtx.state > 0 && gPlayState->pauseCtx.state < 18)) {
             *should = false;
-        } else {
+        } else if ((action == DO_ACTION_NONE || (
+                action != DO_ACTION_DOWN && 
+                action != DO_ACTION_DROP && 
+                action != DO_ACTION_THROW && 
+                !player->actor.bgCheckFlags & 1)) && 
+            rocsRemaining > 0 && 
+            CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherOnA"), 0) == 1) {
             *should = true;
+            *rgbaIcon = true;
             *alternateTexture = gRocsFeatherTex;
+        } else {
+            *should = false;
         }
     });
 }

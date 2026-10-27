@@ -2640,7 +2640,7 @@ void Logic::ApplyItemEffect(Item& item, bool state) {
                     }
                     break;
                 case RG_ROCS_FEATHER:
-                    OTRGlobals::Instance->gRandoContext->HandleGetRocsFeather();
+                        OTRGlobals::Instance->gRandoContext->HandleGetRocsFeather();
                     break;
                 default:
                     break;

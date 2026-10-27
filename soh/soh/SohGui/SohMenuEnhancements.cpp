@@ -1142,8 +1142,7 @@ void SohMenu::AddMenuEnhancements() {
     AddWidget(path, "Custom Items", WIDGET_SEPARATOR_TEXT);
     AddWidget(path, "Roc's Feather on A", WIDGET_CVAR_CHECKBOX)
         .CVar(CVAR_ENHANCEMENT("RocsFeatherOnA"))
-        .Options(CheckboxOptions().Tooltip("If Roc's Feather is enabled and obtained in the current save, have it "
-                                           "usable with A whenever A would normally be blank."));
+        .Options(CheckboxOptions().Tooltip("If Roc's Feather is enabled and obtained in the current save, have it usable with A whenever A would normally be blank."));
 
     // Fixes
     path.sidebarName = "Fixes";

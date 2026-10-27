@@ -634,10 +634,13 @@ void Context::HandleGetBombchuBag() {
 }
 
 uint8_t& Context::GetRocsFeatherCapacity() {
+    bool rocsConsumable = Rando::Context::GetInstance()->GetOption(RSK_ROCS_FEATHER).Is(RO_ROCS_FEATHER_CONSUMABLE);
     static uint8_t& rocsMaxUse = mLogic->GetSaveContext()->ship.quest.data.randomizer.rocsFeathersAcquired;
+    static uint8_t& rocsRemaining = mLogic->GetSaveContext()->ship.quest.data.randomizer.rocsFeathersRemaining;
 
-    if (rocsMaxUse == 0 && Flags_GetRandomizerInf(RAND_INF_OBTAINED_ROCS_FEATHER)) {
+    if (!rocsConsumable && rocsMaxUse == 0 && Flags_GetRandomizerInf(RAND_INF_OBTAINED_ROCS_FEATHER)) {
         rocsMaxUse = 1;
+        rocsRemaining = 1;
     }
     return rocsMaxUse;
 }
@@ -646,19 +649,24 @@ uint8_t& Context::GetRocsFeathersRemaining() {
 }
 
 void Context::HandleGetRocsFeather() {
+    bool rocsConsumable = Rando::Context::GetInstance()->GetOption(RSK_ROCS_FEATHER).Is(RO_ROCS_FEATHER_CONSUMABLE);
+    static uint8_t& rocsMaxUse = mLogic->GetSaveContext()->ship.quest.data.randomizer.rocsFeathersAcquired;
+    static uint8_t& rocsRemaining = mLogic->GetSaveContext()->ship.quest.data.randomizer.rocsFeathersRemaining;
     Flags_SetRandomizerInf(RAND_INF_OBTAINED_ROCS_FEATHER);
 
-    bool rocsConsumable = Rando::Context::GetInstance()->GetOption(RSK_ROCS_FEATHER).Is(RO_ROCS_FEATHER_CONSUMABLE);
-    static uint8_t rocsMaxUse = Rando::Context::GetInstance()->GetOption(RSK_ROCS_FEATHER_COUNT).Get() + 1;
-    static uint8_t& rocsRemaining = mLogic->GetSaveContext()->ship.quest.data.randomizer.rocsFeathersRemaining;
-    static uint8_t& rocsAcquired = mLogic->GetSaveContext()->ship.quest.data.randomizer.rocsFeathersAcquired;
+    if (rocsMaxUse == 0) {
+        rocsMaxUse = 0;
+        rocsRemaining = 0;
+    }
 
-    if (!rocsConsumable) {
-        rocsAcquired = rocsAcquired < rocsMaxUse ? rocsAcquired + 1 : rocsMaxUse;
-        rocsRemaining = rocsAcquired;
+    if (rocsConsumable) {
+        uint8_t maxFeathers = Rando::Context::GetInstance()->GetOption(RSK_ROCS_FEATHER_COUNT).Get();
+        rocsMaxUse = maxFeathers;
+        rocsRemaining = rocsRemaining < rocsMaxUse ? rocsRemaining + 1 : rocsMaxUse;
+
     } else {
-        rocsAcquired = rocsMaxUse;
-        rocsRemaining = rocsRemaining < rocsAcquired ? rocsRemaining + 1 : rocsAcquired;
+        rocsMaxUse++;
+        rocsRemaining = rocsMaxUse;
     }
 }
 
