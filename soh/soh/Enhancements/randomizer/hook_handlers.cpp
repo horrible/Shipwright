@@ -2107,32 +2107,27 @@ void RandomizerOnVanillaBehaviorHandler(GIVanillaBehavior id, bool* should, va_l
         }
         case VB_REPLACE_SHOP_ITEM: {
             EnGirlA* shop = va_arg(args, EnGirlA*);
-            LUSLOG_WARN("LIZDEBUG!!!!! in hook handler VB_REPLACE_SHOP_ITEM!!! %d", shop->actor.params);
 
-            // todo - this
+            // replace Recovery Hearts in shops with Roc's Feathers when they're consumable
             if (RAND_GET_OPTION(RSK_ROCS_FEATHER).Is(RO_ROCS_FEATHER_CONSUMABLE) &&
                 shop->actor.params == SI_RECOVERY_HEART) {
-                ShopItemIdentity shopItemIdentity =
-                    OTRGlobals::Instance->gRandomizer->IdentifyShopItem(gPlayState->sceneNum, shop->randoSlotIndex);
-                shop->actor.textId = TEXT_BUY_BOMBCHUS_10_DESC;
-                // shop->actor.textId = (s16) TEXT_SHOP_ITEM_RANDOM + ITEM_ROCS_FEATHER  -
-                // RAND_INF_SHOP_ITEMS_KF_SHOP_ITEM_1 + NUM_SHOP_ITEMS; shop->actor.textId = 0x9100 +
-                // (shopItemIdentity.identity.randomizerInf - RAND_INF_SHOP_ITEMS_KF_SHOP_ITEM_1);
-                shop->itemBuyPromptTextId = TEXT_BUY_BOMBCHUS_10_PROMPT;
-                // shop->itemBuyPromptTextId = (s16) TEXT_SHOP_ITEM_RANDOM_CONFIRM + ITEM_ROCS_FEATHER -
-                // RAND_INF_SHOP_ITEMS_KF_SHOP_ITEM_1 + NUM_SHOP_ITEMS; shop->itemBuyPromptTextId = shop->actor.textId +
-                // NUM_SHOP_ITEMS;
+                shop->actor.textId = (s16)TEXT_BUY_ROCS_FEATHER_DESC;
+                shop->itemBuyPromptTextId = (s16)TEXT_BUY_ROCS_FEATHER_PROMPT;
                 shop->getItemId = Rando::StaticData::RetrieveItem(RG_ROCS_FEATHER).GetGIEntry_Copy().getItemId;
-                shop->canBuyFunc = [](PlayState*, EnGirlA*) -> s32 { return CANBUY_RESULT_SUCCESS; };
+                shop->giDrawId = GI_NONE;
+                shop->canBuyFunc = [](PlayState*, EnGirlA*) -> s32 {
+                    if (gSaveContext.ship.quest.data.randomizer.rocsFeathersRemaining <
+                        (Rando::Context::GetInstance()->GetOption(RSK_ROCS_FEATHER_COUNT).Get() + 1)) {
+                        return CANBUY_RESULT_SUCCESS;
+                    } else {
+                        return CANBUY_RESULT_CANT_GET_NOW;
+                    }
+                };
                 shop->itemGiveFunc = [](PlayState*, EnGirlA* girlA) {
                     GetItemEntry replacementItem = Rando::StaticData::RetrieveItem(RG_ROCS_FEATHER).GetGIEntry_Copy();
-                    gSaveContext.ship.pendingSale = replacementItem.itemId;
-                    gSaveContext.ship.pendingSaleMod = replacementItem.modIndex;
-                    Flags_SetRandomizerInf(RAND_INF_OBTAINED_ROCS_FEATHER);
+                    Randomizer_Item_Give(gPlayState, replacementItem);
                     Rupees_ChangeBy(-girlA->basePrice);
                 };
-                shop->giDrawId = GI_NONE;
-
                 *should = true;
             }
             break;

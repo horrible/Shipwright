@@ -1,6 +1,8 @@
 #include <libultraship/bridge/consolevariablebridge.h>
 
 #include "soh/Enhancements/game-interactor/GameInteractor.h"
+#include "soh/Enhancements/custom-message/CustomMessageManager.h"
+#include "soh/Enhancements/custom-message/CustomMessageTypes.h"
 #include "soh/Enhancements/randomizer/SeedContext.h"
 #include "soh/ShipInit.hpp"
 
@@ -18,7 +20,7 @@ extern SaveContext gSaveContext;
 
 static uint8_t groundTimer = 0;
 static f32 effectsScale = 1.0f;
-static bool rocsConsumable = false;
+static bool rocsConsumable = true;
 
 static u8& RocsFeathersAcquired() {
     return gSaveContext.ship.quest.data.randomizer.rocsFeathersAcquired;
@@ -28,13 +30,13 @@ static u8& RocsFeathersRemaining() {
     return gSaveContext.ship.quest.data.randomizer.rocsFeathersRemaining;
 }
 
-static void BuildRocsFeatherMessage(uint16_t* textId, bool* loadFromMessageTable) {
+static void BuildRocsFeatherGetMessage(uint16_t* textId, bool* loadFromMessageTable) {
     CustomMessage msg;
 
     msg = CustomMessage(
         "You got %bRoc's Feather%w!&You now have %b[[d]]%w |use|uses| of it!",
-        "<<Du erhältst %bGreifenfeder%w!&Du kannst sie nun %b[[d]]%w-mal einsetzen!>>", // TODO - German Translation
-        "Vous obtenez le %bPlume de Roc%w!&Vous pouvez l'utiliser %b[[d]]%w fois!");    // TODO - Confirm
+        "<<Du erhältst %bGreifenfeder%w!&Du kannst sie nun %b[[d]]%w-mal einsetzen!>>",  // TODO - German Translation
+        "<<Vous obtenez la %bPlume de Roc%w!&Vous pouvez l'utiliser %b[[d]]%w fois!>>"); // TODO - French Translation
 
     if (rocsConsumable) {
         msg.InsertNumber(RocsFeathersRemaining());
@@ -42,6 +44,26 @@ static void BuildRocsFeatherMessage(uint16_t* textId, bool* loadFromMessageTable
         msg.InsertNumber(RocsFeathersAcquired());
     }
     msg.AutoFormat(ITEM_ROCS_FEATHER);
+    msg.LoadIntoFont();
+    *loadFromMessageTable = false;
+}
+void BuildRocsShopDesc(uint16_t* textId, bool* loadFromMessageTable) {
+    CustomMessage msg("\x08%rRoc's Feather  10 Rupees%w&Use this to jump across holes and chasms.\x0A\x02",
+                      "\x08%r<<Greifenfeder 10 Rubine%w&Sonderangebot!>>\x0A\x02", // TODO - German Translation
+                      "\x08<<La %rPlume de Roc  10 Rubis%w&Elle vous permet de franchir les trous et les "
+                      "failles.>>\x0A\x02"); // TODO - French Translation
+    msg.AutoFormat();
+    msg.LoadIntoFont();
+    *loadFromMessageTable = false;
+}
+
+void BuildRocsShopPrompt(uint16_t* textId, bool* loadFromMessageTable) {
+    CustomMessage msg;
+    msg = CustomMessage(
+        "\x08%rRoc's Feather  10 Rupees%w\x09\x1B%gBuy&Don't buy%w\x09\x02",
+        "\x08<<%rGreifenfeder  10 Rubine%w\x09\x1B%gKaufen&Nicht kaufen%w>>\x09\x02",       // TODO - German Translation
+        "\x08<<%rLa Plume de Roc  10 Rubis%w\x09\x1B%gAcheter&Ne pas acheter%w>>\x09\x02"); // TODO - French Translation
+    msg.AutoFormat();
     msg.LoadIntoFont();
     *loadFromMessageTable = false;
 }
@@ -212,7 +234,9 @@ void RegisterRocsFeather() {
         }
     });
 
-    COND_ID_HOOK(OnOpenText, TEXT_GET_ROCS_FEATHER, shouldRegister, BuildRocsFeatherMessage);
+    COND_ID_HOOK(OnOpenText, TEXT_GET_ROCS_FEATHER, shouldRegister, BuildRocsFeatherGetMessage);
+    COND_ID_HOOK(OnOpenText, TEXT_BUY_ROCS_FEATHER_DESC, shouldRegister && rocsConsumable, BuildRocsShopDesc);
+    COND_ID_HOOK(OnOpenText, TEXT_BUY_ROCS_FEATHER_PROMPT, shouldRegister && rocsConsumable, BuildRocsShopPrompt);
 }
 
 static RegisterShipInitFunc registerRocsFeather(RegisterRocsFeather);

@@ -440,7 +440,7 @@ void GenerateItemPool() {
         if (ctx->GetOption(RSK_ROCS_FEATHER).Is(RO_ROCS_FEATHER_ON)) {
             AddFixedItemToPool(RG_ROCS_FEATHER, feathers);
         } else {
-            AddItemToPool(RG_ROCS_FEATHER, (int) (feathers*1.5), (int) (feathers*1.25), feathers, feathers);
+            AddItemToPool(RG_ROCS_FEATHER, (int) (feathers*1.5), (int) (feathers*1.25), feathers, (int) (feathers*0.75));
         }
     }
 
