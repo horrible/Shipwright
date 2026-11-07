@@ -3671,15 +3671,6 @@ typedef enum {
     // true
     // ```
     // #### `args`
-    // - *EnGirlACanBuyResult
-    // - `RAND_INF`
-    VB_CAN_REBUY_RANDOMIZED_ITEM,
-
-    // #### `result`
-    // ```c
-    // true
-    // ```
-    // #### `args`
     // - None
     VB_CHECK_BOMBCHU_CAPACITY,
 
