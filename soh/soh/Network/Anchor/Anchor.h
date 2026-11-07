@@ -8,6 +8,7 @@
 #include <spdlog/spdlog.h>
 #include <queue>
 #include <mutex>
+#include <list>
 
 extern "C" {
 #include "variables.h"
@@ -44,6 +45,7 @@ typedef struct {
     s8 currentBoots;
     s8 currentShield;
     s8 currentTunic;
+    u32 altModelIndex;
     u32 stateFlags1;
     u32 stateFlags2;
     u8 buttonItem0;
