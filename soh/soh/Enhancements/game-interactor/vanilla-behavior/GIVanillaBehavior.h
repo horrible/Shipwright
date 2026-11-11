@@ -662,6 +662,15 @@ typedef enum {
 
     // #### `result`
     // ```c
+    // false
+    // ```
+    // disable feathers for held cucco
+    // #### `args`
+    // - `*Actor`
+    VB_DISABLE_CUCCO_FEATHERS,
+
+    // #### `result`
+    // ```c
     // !Player_InCsMode(play) && !(player->stateFlags1 & (PLAYER_STATE1_ON_HORSE | PLAYER_STATE1_IN_WATER)) &&
     // this->actor.xzDistToPlayer <= 15.0f && -50.0f <= this->actor.yDistToPlayer &&
     // this->actor.yDistToPlayer <= 15.0f
@@ -1683,6 +1692,15 @@ typedef enum {
     // #### `args`
     // - `*BgIceTurara`
     VB_ICICLE_SETUP_DRAW,
+
+    // #### `result`
+    // ```c
+    // true
+    // ```
+    // #### `args`
+    // - `*Player`
+    // - `s32 (Button ID)`
+    VB_IGNORE_ITEM_BLOCKING_STATE,
 
     // #### `result`
     // ```c
@@ -2861,6 +2879,16 @@ typedef enum {
     // - `bool rgbaIcon`
     // - `char* alternateTexture`
     VB_SET_ACTION_TEXTURE,
+
+    // #### `result`
+    // ```c
+    // false
+    // ```
+    // Override actor color before skeleton draw
+    // #### `args`
+    // - `*Actor`
+    // - `*Color_RGBA8`
+    VB_SET_ACTOR_COLOR,
 
     // #### `result`
     // ```c

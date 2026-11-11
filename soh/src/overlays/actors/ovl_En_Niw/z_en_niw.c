@@ -1143,14 +1143,22 @@ void EnNiw_Draw(Actor* thisx, PlayState* play) {
     Vec3f scale = { 0.15f, 0.15f, 0.15f };
     GraphicsContext* gfxCtx = play->state.gfxCtx;
 
+    Color_RGBA8 color = { 0xFF, 0xFF, 0xFF, 0xFF };
+    GameInteractor_Should(VB_SET_ACTOR_COLOR, false, thisx, &color);
+    OPEN_DISPS(play->state.gfxCtx);
     Gfx_SetupDL_25Opa(play->state.gfxCtx);
+    gDPSetEnvColor(POLY_OPA_DISP++, color.r, color.g, color.b, color.a);
+
     SkelAnime_DrawSkeletonOpa(play, &this->skelAnime, EnNiw_OverrideLimbDraw, NULL, this);
+    CLOSE_DISPS(play->state.gfxCtx);
 
     if (this->actionFunc == func_80AB6450) {
         func_80033C30(&this->actor.world.pos, &scale, 255, play);
     }
 
-    EnNiw_FeatherDraw(this, play);
+    if (!GameInteractor_Should(VB_DISABLE_CUCCO_FEATHERS, false, thisx)) {
+        EnNiw_FeatherDraw(this, play);
+    }
 }
 
 void EnNiw_FeatherSpawn(EnNiw* this, Vec3f* pos, Vec3f* vel, Vec3f* accel, f32 scale) {
