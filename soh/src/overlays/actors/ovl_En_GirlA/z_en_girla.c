@@ -1367,23 +1367,21 @@ void EnGirlA_WaitForObject(EnGirlA* this, PlayState* play) {
                 ShopItemIdentity shopItemIdentity = Randomizer_IdentifyShopItem(play->sceneNum, this->randoSlotIndex);
                 GetItemEntry getItemEntry = Randomizer_GetItemFromKnownCheckWithoutObtainabilityCheck(
                     shopItemIdentity.identity.randomizerCheck, shopItemIdentity.ogItemId);
-                            this->actor.textId =
-                                0x9100 + (shopItemIdentity.identity.randomizerInf - RAND_INF_SHOP_ITEMS_KF_SHOP_ITEM_1);
-                            this->itemBuyPromptTextId =
-                                0x9100 +
-                                ((shopItemIdentity.identity.randomizerInf - RAND_INF_SHOP_ITEMS_KF_SHOP_ITEM_1) +
-                                 NUM_SHOP_ITEMS);
-                            this->getItemId = getItemEntry.getItemId;
-                            this->basePrice = shopItemIdentity.itemPrice;
-                            this->giDrawId = getItemEntry.gid;
+                this->actor.textId =
+                    0x9100 + (shopItemIdentity.identity.randomizerInf - RAND_INF_SHOP_ITEMS_KF_SHOP_ITEM_1);
+                this->itemBuyPromptTextId =
+                    0x9100 +
+                    ((shopItemIdentity.identity.randomizerInf - RAND_INF_SHOP_ITEMS_KF_SHOP_ITEM_1) + NUM_SHOP_ITEMS);
+                this->getItemId = getItemEntry.getItemId;
+                this->basePrice = shopItemIdentity.itemPrice;
+                this->giDrawId = getItemEntry.gid;
 
-                            // Correct the rotation for spiritual stones, but only if mysterious shuffle isn't on, else
-                            // it's obvious what's there in shops
-                            if (!CVarGetInteger(CVAR_RANDOMIZER_ENHANCEMENT("MysteriousShuffle"), 0) &&
-                                (getItemEntry.getItemId >= RG_KOKIRI_EMERALD &&
-                                 getItemEntry.getItemId <= RG_ZORA_SAPPHIRE)) {
-                                this->actor.shape.rot.y = this->actor.shape.rot.y + 20000;
-                            }
+                // Correct the rotation for spiritual stones, but only if mysterious shuffle isn't on, else
+                // it's obvious what's there in shops
+                if (!CVarGetInteger(CVAR_RANDOMIZER_ENHANCEMENT("MysteriousShuffle"), 0) &&
+                    (getItemEntry.getItemId >= RG_KOKIRI_EMERALD && getItemEntry.getItemId <= RG_ZORA_SAPPHIRE)) {
+                    this->actor.shape.rot.y = this->actor.shape.rot.y + 20000;
+                }
             }
         }
         // #endregion
