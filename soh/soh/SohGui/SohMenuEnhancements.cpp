@@ -1139,6 +1139,11 @@ void SohMenu::AddMenuEnhancements() {
         .CVar(CVAR_ENHANCEMENT("RebottleBlueFire"))
         .Options(CheckboxOptions().Tooltip("Blue Fire dropped from a bottle can be bottled."));
 
+    AddWidget(path, "Personalizations", WIDGET_SEPARATOR_TEXT);
+    AddWidget(path, "Manual Jump on A", WIDGET_CVAR_CHECKBOX)
+        .CVar(CVAR_ENHANCEMENT("ManualJumpOnA"))
+        .Options(CheckboxOptions().Tooltip("Put jump on A whenever A would normally be blank."));
+
     // Fixes
     path.sidebarName = "Fixes";
     AddSidebarEntry("Enhancements", path.sidebarName, 3);

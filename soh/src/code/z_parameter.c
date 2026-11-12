@@ -6757,6 +6757,7 @@ void Interface_Update(PlayState* play) {
                 if ((action == DO_ACTION_MAX) || (action == DO_ACTION_MAX + 1)) {
                     action = DO_ACTION_NONE;
                 }
+                GameInteractor_Should(VB_SET_ACTION_TEXTURE, true, &action, &interfaceCtx->doActionSegment[0]);
                 Interface_LoadActionLabel(interfaceCtx, action, 0);
             }
             break;
@@ -6777,6 +6778,7 @@ void Interface_Update(PlayState* play) {
                 if ((action == DO_ACTION_MAX) || (action == DO_ACTION_MAX + 1)) {
                     action = DO_ACTION_NONE;
                 }
+                GameInteractor_Should(VB_SET_ACTION_TEXTURE, true, &action, &interfaceCtx->doActionSegment[0]);
                 Interface_LoadActionLabel(interfaceCtx, action, 0);
             }
             break;
