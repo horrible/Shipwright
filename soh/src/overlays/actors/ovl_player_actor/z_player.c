@@ -2517,7 +2517,8 @@ void Player_ProcessItemButtons(Player* this, PlayState* play) {
         }
     }
 
-    if (!(this->stateFlags1 & (PLAYER_STATE1_CARRYING_ACTOR | PLAYER_STATE1_IN_CUTSCENE)) && !func_8008F128(this)) {
+    if (GameInteractor_Should(VB_IGNORE_ITEM_BLOCKING_STATE, false, this, i) ||
+     (!(this->stateFlags1 & (PLAYER_STATE1_CARRYING_ACTOR | PLAYER_STATE1_IN_CUTSCENE)) && !func_8008F128(this))) {
         if (this->itemAction >= PLAYER_IA_FISHING_POLE) {
             bool hasOnDpad = false;
             if (CVarGetInteger(CVAR_ENHANCEMENT("DpadEquips"), 0) != 0) {
@@ -11047,6 +11048,8 @@ void Player_UpdateInterface(PlayState* play, Player* this) {
                         } else {
                             doAction = DO_ACTION_THROW;
                         }
+                        GameInteractor_Should(VB_SET_ACTION_TEXTURE, true, &doAction,
+                                              &play->interfaceCtx.doActionSegment[1]);
                     }
                 } else if (!(this->stateFlags1 & PLAYER_STATE1_IN_WATER) && func_8083A0D4(this) &&
                            (this->getItemId < GI_MAX)) {

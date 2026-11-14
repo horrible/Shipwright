@@ -14,16 +14,14 @@ extern "C" {
 extern PlayState* gPlayState;
 extern SaveContext gSaveContext;
 
+extern void Player_DestroyHookshot(Player*);
 extern void Player_DetachHeldActor(PlayState*, Player*);
 extern void Player_SetUpperActionFunc(Player*, UpperActionFunc);
 extern s32 Player_UpperAction_CarryActor(Player*, PlayState*);
 extern s32 Player_UpdateUpperBody(Player*, PlayState*);
-extern void Player_AnimPlayOnce(PlayState*, Player*, LinkAnimationHeader*);
 extern void Player_Action_808464B0(Player*, PlayState*);
 extern s32 Player_SetupAction(PlayState*, Player*, PlayerActionFunc, s32);
-extern s32 Player_GetItemOnButton(PlayState*, s32);
-
-
+extern s32 Player_InitItemActionWithAnim(PlayState*, Player*, s32);
 }
 
 #define CUCCO_WHITE 255, 255, 255, 255
@@ -40,31 +38,40 @@ typedef struct TradeItemActor {
 
 static TradeItemActor managedActor;
 
-void SpawnCarryActor(PlayState* playState, Player* player, ActorID actorId) {
+void SpawnCarryActor(Player* player, PlayState* playState) {
     if (managedActor.actor != NULL) {
-        Actor_Kill(managedActor.actor); //kthxbai :^)
+        Actor_Kill(managedActor.actor);
     }
+
+    player->nextModelGroup = Player_ActionToModelGroup(player, PLAYER_IA_NONE);
+    Player_DestroyHookshot(player);
+    Player_DetachHeldActor(playState, player);
+    Player_InitItemActionWithAnim(playState, player, PLAYER_IA_NONE);
+
     managedActor.actor = Actor_SpawnAsChild(
-        &playState->actorCtx, &player->actor, playState, actorId,
+        &playState->actorCtx, &player->actor, playState, managedActor.id,
         player->actor.world.pos.x, player->actor.world.pos.y, player->actor.world.pos.z,
         0, player->actor.shape.rot.y, 0, 0);
 
-        player->interactRangeActor = managedActor.actor;
-        player->heldActor = managedActor.actor;
-        player->getItemId = GI_NONE; //is this needed? who knows! not me :)
-        player->getItemEntry = GET_ITEM_NONE; //ditto
-        player->unk_3BC.y = managedActor.actor->shape.rot.y - player->actor.shape.rot.y;
-        player->stateFlags1 |= PLAYER_STATE1_CARRYING_ACTOR;
+    player->interactRangeActor = managedActor.actor;
+    player->heldActor = managedActor.actor;
+    player->unk_3BC.y = managedActor.actor->shape.rot.y - player->actor.shape.rot.y;
+    player->stateFlags1 |= PLAYER_STATE1_CARRYING_ACTOR;
 
-        //todo - figure out which of these are needed lol
-        Player_SetUpperActionFunc(player, Player_UpperAction_CarryActor);
-        Player_AnimPlayOnce(playState, player, (LinkAnimationHeader*)&gPlayerAnim_link_normal_free2bom);
-        LinkAnimation_PlayOnce(playState, &player->upperSkelAnime, (LinkAnimationHeader*)&gPlayerAnim_link_normal_free2bom);
-        Player_UpdateUpperBody(player, playState);
+    Player_SetUpperActionFunc(player, Player_UpperAction_CarryActor);
+    LinkAnimation_PlayOnce(playState, &player->upperSkelAnime, (LinkAnimationHeader*)&gPlayerAnim_link_normal_free2bom);
+    Player_UpdateUpperBody(player, playState);
 }
 
-void DestroyCarryActor(){
-    if (!(managedActor.actor == nullptr) && !managedActor.delayedDestroy) {
+void DestroyCarryActor(u8 delay) {
+    if (delay > 0) {
+        Player* player = GET_PLAYER(gPlayState);
+        Player_SetupAction(gPlayState, player, Player_Action_808464B0, 1);
+        //play bomb take-out anim in reverse
+        LinkAnimationHeader* anim = (LinkAnimationHeader*)&gPlayerAnim_link_normal_free2bom;
+        LinkAnimation_Change(gPlayState, &player->skelAnime, anim, -1.0f, Animation_GetLastFrame(anim)-1.0f, 0.0f, ANIMMODE_ONCE, -6.0f);
+        managedActor.delayedDestroy = delay;
+    } else if (!(managedActor.actor == nullptr) && !managedActor.delayedDestroy) {
         Actor_Kill(managedActor.actor);
         managedActor.delayedDestroy = 0;
         managedActor.actor = nullptr;
@@ -79,7 +86,10 @@ void DestroyCarryActor(){
     
 }
 
-//she did cosmetic surgery on a cucco...
+void DestroyCarryActor() {
+    DestroyCarryActor(0);
+}
+
 void enableCuccoColoring() {
     const char* skele[] = { gCuccoHeadDL, gCuccoLeftFootDL, gCuccoLeftWingDL, gCuccoRightFootDL, gCuccoRightWingDL, gCuccoNeckDL, gCuccoTailAndUndersideDL };
     int offset[] = { 6, 6, 6, 6, 6, 6, 13 };
@@ -87,7 +97,7 @@ void enableCuccoColoring() {
     int i;
     for (i = 0; i < ARRAY_COUNT(skele); i++) {
         snprintf(patchName, sizeof(patchName), "tint %d", i);
-        //patch to allow skeleton coloring to use the env shaders that most others do
+        //patch skeleton to allow env shaders
         ResourceMgr_PatchGfxByName(
             skele[i], patchName, offset[i], 
             gsDPSetCombineLERP(TEXEL0, 0, SHADE, 0, 0, 0, 0, TEXEL0, ENVIRONMENT, 0, COMBINED, 0, 0, 0, 0, COMBINED)
@@ -124,35 +134,6 @@ int BtnEquippedWith(int qty, ...) {
 
     return equipped;
 }
-int BtnNotEquippedWith(int qty, ...) {
-    va_list args;
-    va_start(args, qty);
-
-    u8 equipped = 0;
-    int item;
-    while (qty-- > 0) {
-        item = va_arg(args, int);
-        if (C_BTN_ITEM(0) == item) {
-            equipped |= BTN_CLEFT;
-        } else if (C_BTN_ITEM(1) == item) {
-            equipped |= BTN_CDOWN;
-        } else if (C_BTN_ITEM(2) == item) {
-            equipped |= BTN_CRIGHT;
-        } else if (DPAD_ITEM(0) == item) {
-            equipped |= BTN_DUP;
-        } else if (DPAD_ITEM(1) == item) {
-            equipped |= BTN_DDOWN;
-        } else if (DPAD_ITEM(2) == item) {
-            equipped |= BTN_DLEFT;
-        } else if (DPAD_ITEM(3) == item) {
-            equipped |= BTN_DRIGHT;
-        }
-    }
-    va_end(args);
-
-    return (BTN_CLEFT | BTN_CDOWN | BTN_CRIGHT | BTN_DUP | BTN_DDOWN | BTN_DLEFT | BTN_DRIGHT) & ~equipped;
-}
-
 
 
 void RegisterTradeItemUses() {
@@ -183,23 +164,24 @@ void RegisterTradeItemUses() {
     
 
     COND_VB_SHOULD(VB_SET_ACTOR_COLOR, shouldRegister, {
-        if (managedActor.item != ITEM_COJIRO) {
-            //do nothing if we're not coloring this item.
+        Actor* actor = va_arg(args, Actor*);
+
+        //atm only cuccos colored
+        if (actor->id != ACTOR_EN_NIW) {
             return;
         }
 
-        Actor* actor = va_arg(args, Actor*);
-        Color_RGBA8* color = va_arg(args, Color_RGBA8*);
+        *should = true;
 
         if (actor == managedActor.actor) { 
             if (managedActor.item == ITEM_COJIRO) {
-                *should = true;
+                Color_RGBA8* color = va_arg(args, Color_RGBA8*);
                 *color = managedActor.color;
             }
         }
     });
 
-    COND_VB_SHOULD(VB_DISABLE_CUCCO_FEATHERS, shouldRegister, {
+    COND_VB_SHOULD(VB_DISABLE_ACTOR_EFFECT, shouldRegister, {
         if (managedActor.id != ACTOR_EN_NIW) {
             //do nothing if we're not a chicken
             return;
@@ -216,16 +198,13 @@ void RegisterTradeItemUses() {
 
     COND_VB_SHOULD(VB_IGNORE_ITEM_BLOCKING_STATE, shouldRegister, {
         Player* player = va_arg(args, Player*);
+        //state not (exclusively) caused by any trade item
         if (managedActor.actor == nullptr || player->heldActor == nullptr || (player->stateFlags1 & PLAYER_STATE1_IN_CUTSCENE) || func_8008F128(player)) {
-            //do nothing if we're blocked for a non-carry reason (or not blocked, etc).
             return;
         }
-
-        //ignore carry item-use block for other items when holding a managed item so that the hook below handles it instead.
-       LUSLOG_WARN("LIZDEBUG!!!!! VB_IGNORE_ITEM_BLOCKING_STATE passed early exit!!! held: %d managed: %d", player->heldActor->id, managedActor.id);
+        //ignore carry actor state when holding cucco
         if (player->heldActor == managedActor.actor && (player->stateFlags1 & (PLAYER_STATE1_CARRYING_ACTOR))) {
             *should = true;
-
         }
 
     });
@@ -233,40 +212,9 @@ void RegisterTradeItemUses() {
     COND_VB_SHOULD(VB_CHANGE_HELD_ITEM_AND_USE_ITEM, shouldRegister, {
         int32_t usedItem = va_arg(args, int32_t);
         Player* player = GET_PLAYER(gPlayState);
-        LUSLOG_WARN("LIZDEBUG!!!!! VB_CHANGE_HELD_ITEM_AND_USE_ITEM!!! %d", usedItem);
 
         switch (usedItem) {
             case ITEM_COJIRO:
-                /* //Dark
-                managedActor.color.r = 0x2C;
-                managedActor.color.g = 0x4E;
-                managedActor.color.b = 0x8E;
-                managedActor.color.a = 0xFF;
-                //*/
-                /* //Slightly Less Dark
-                managedActor.color.r = 0x35;
-                managedActor.color.g = 0x5D;
-                managedActor.color.b = 0xAB;
-                managedActor.color.a = 0xFF;
-                //*/
-                /* //Middle?
-                managedActor.color.r = 0x2C;
-                managedActor.color.g = 0x4D;
-                managedActor.color.b = 0x8E;
-                managedActor.color.a = 0xFF;
-                //*/
-                /* //Light
-                managedActor.color.r = 0x46;
-                managedActor.color.g = 0x7A;
-                managedActor.color.b = 0xDE;
-                managedActor.color.a = 0xFF;
-                //*/
-                /* //Lighter
-                managedActor.color.r = 0x3C;
-                managedActor.color.g = 0x6A;
-                managedActor.color.b = 0xC1;
-                managedActor.color.a = 0xFF;
-                //*/
             case ITEM_POCKET_CUCCO:
             case ITEM_CHICKEN:
                 if (!(player->stateFlags1 & (PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS))) {
@@ -274,7 +222,7 @@ void RegisterTradeItemUses() {
                     if (usedItem != managedActor.item) {
                         managedActor.id = ACTOR_EN_NIW;
                         managedActor.item = usedItem;
-                        SpawnCarryActor(gPlayState, player, managedActor.id);
+                        SpawnCarryActor(player, gPlayState);
                         if (usedItem == ITEM_POCKET_CUCCO) {
                             Actor_SetScale(managedActor.actor, 0.005f);
                             managedActor.actor->shape.yOffset +=500.0f;
@@ -315,22 +263,18 @@ void RegisterTradeItemUses() {
         Input* input = va_arg(args, Input*);
         Player* player = GET_PLAYER(gPlayState);
 
-        //disregard all previous instructions and hold that bird :)
         if (managedActor.actor != nullptr && managedActor.id == ACTOR_EN_NIW) {
             //can't swap between cuccos or re-deploy a cucco that's already out
             if (CHECK_BTN_ANY(input->press.button, BtnEquippedWith(4, ITEM_CHICKEN, ITEM_POCKET_CUCCO, ITEM_COJIRO, ITEM_NONE))) {
                 *should = false;
             } else if (CHECK_BTN_ANY(input->press.button, BTN_A)) {
                 *should = false;
-                Player_SetupAction(gPlayState, player, Player_Action_808464B0, 1);
-                LinkAnimationHeader* anim = (LinkAnimationHeader*)&gPlayerAnim_link_normal_free2bom;
-                LinkAnimation_Change(gPlayState, &player->skelAnime, anim, -1.0f, Animation_GetLastFrame(anim)-1.0f, 0.0f, ANIMMODE_ONCE, -6.0f);
-                //Player_AnimPlayOnce(gPlayState, player, (LinkAnimationHeader*)&gPlayerAnim_link_normal_fighter2free);
-                //set destroy on future player update to make the cucco appear more like it's being put away
-                managedActor.delayedDestroy = 6;
+                DestroyCarryActor(6);
 
-            //destroy actor, but don't intercept default action
-            } else if (CHECK_BTN_ANY(input->press.button, BTN_B | BtnNotEquippedWith(4, ITEM_CHICKEN, ITEM_POCKET_CUCCO, ITEM_COJIRO, ITEM_NONE))) {
+            //destroy actor, don't intercept
+            } else if (CHECK_BTN_ANY(input->press.button, BTN_B |
+                (BTN_CLEFT | BTN_CDOWN | BTN_CRIGHT | BTN_DUP | BTN_DDOWN | BTN_DLEFT | BTN_DRIGHT) &
+                ~BtnEquippedWith(4, ITEM_CHICKEN, ITEM_POCKET_CUCCO, ITEM_COJIRO, ITEM_NONE))) {
                 DestroyCarryActor();
             }
         }

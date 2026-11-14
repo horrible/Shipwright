@@ -664,10 +664,10 @@ typedef enum {
     // ```c
     // false
     // ```
-    // disable feathers for held cucco
+    // disable additional actor effect
     // #### `args`
     // - `*Actor`
-    VB_DISABLE_CUCCO_FEATHERS,
+    VB_DISABLE_ACTOR_EFFECT,
 
     // #### `result`
     // ```c
