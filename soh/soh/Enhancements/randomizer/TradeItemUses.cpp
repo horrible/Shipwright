@@ -22,24 +22,21 @@ extern s32 Player_UpdateUpperBody(Player*, PlayState*);
 extern void Player_Action_808464B0(Player*, PlayState*);
 extern s32 Player_SetupAction(PlayState*, Player*, PlayerActionFunc, s32);
 extern s32 Player_InitItemActionWithAnim(PlayState*, Player*, s32);
+extern s32 Player_UseItem(PlayState*, Player*, s32);
 }
-
-#define CUCCO_WHITE 255, 255, 255, 255
-#define CUCCO_YELLOW 0x4E, 0x8E, 0x2C, 0xFF
-#define CUCCO_BLUE 0x2C, 0x4E, 0x8E, 0xFF
 
 typedef struct TradeItemActor {
     ActorID id;
     Actor* actor;
     int32_t item;
     Color_RGBA8 color;
-    u8 delayedDestroy;
+    s8 delayedDestroy;
 } TradeItemActor;
 
 static TradeItemActor managedActor;
 
 void SpawnCarryActor(Player* player, PlayState* playState) {
-    if (managedActor.actor != NULL) {
+    if (managedActor.actor != nullptr) {
         Actor_Kill(managedActor.actor);
     }
 
@@ -71,7 +68,7 @@ void DestroyCarryActor(u8 delay) {
         LinkAnimationHeader* anim = (LinkAnimationHeader*)&gPlayerAnim_link_normal_free2bom;
         LinkAnimation_Change(gPlayState, &player->skelAnime, anim, -1.0f, Animation_GetLastFrame(anim)-1.0f, 0.0f, ANIMMODE_ONCE, -6.0f);
         managedActor.delayedDestroy = delay;
-    } else if (!(managedActor.actor == nullptr) && !managedActor.delayedDestroy) {
+    } else if (!(managedActor.actor == nullptr) && --managedActor.delayedDestroy <= 0) {
         Actor_Kill(managedActor.actor);
         managedActor.delayedDestroy = 0;
         managedActor.actor = nullptr;
@@ -80,9 +77,7 @@ void DestroyCarryActor(u8 delay) {
         managedActor.color.b = 0xFF;
         managedActor.color.a = 0xFF;
         managedActor.item = ITEM_NONE;
-    } else if (managedActor.actor != nullptr) {
-        --managedActor.delayedDestroy;
-    }
+    } 
     
 }
 
@@ -113,20 +108,27 @@ int BtnEquippedWith(int qty, ...) {
     u8 equipped = 0;
     int item;
     while (qty-- > 0) {
+        //BTN_CLEFT, BTN_CDOWN, BTN_CRIGHT, BTN_DUP, BTN_DDOWN, BTN_DLEFT, BTN_DRIGHT
         item = va_arg(args, int);
         if (C_BTN_ITEM(0) == item) {
             equipped |= BTN_CLEFT;
-        } else if (C_BTN_ITEM(1) == item) {
+        } 
+        if (C_BTN_ITEM(1) == item) {
             equipped |= BTN_CDOWN;
-        } else if (C_BTN_ITEM(2) == item) {
+        } 
+        if (C_BTN_ITEM(2) == item) {
             equipped |= BTN_CRIGHT;
-        } else if (DPAD_ITEM(0) == item) {
+        } 
+        if (DPAD_ITEM(0) == item) {
             equipped |= BTN_DUP;
-        } else if (DPAD_ITEM(1) == item) {
+        } 
+        if (DPAD_ITEM(1) == item) {
             equipped |= BTN_DDOWN;
-        } else if (DPAD_ITEM(2) == item) {
+        } 
+        if (DPAD_ITEM(2) == item) {
             equipped |= BTN_DLEFT;
-        } else if (DPAD_ITEM(3) == item) {
+        } 
+        if (DPAD_ITEM(3) == item) {
             equipped |= BTN_DRIGHT;
         }
     }
@@ -134,7 +136,6 @@ int BtnEquippedWith(int qty, ...) {
 
     return equipped;
 }
-
 
 void RegisterTradeItemUses() {
     bool shouldRegister = true;
@@ -146,12 +147,12 @@ void RegisterTradeItemUses() {
     COND_HOOK(OnPlayerUpdate, shouldRegister, []() {
         //early exits
         Player* player = GET_PLAYER(gPlayState);
-        if (managedActor.actor == nullptr) {
-            return;
-        } else if (managedActor.delayedDestroy || managedActor.id == ACTOR_EN_NIW && player->heldActor != managedActor.actor) {
+        if (managedActor.delayedDestroy > 0  || player->heldActor != managedActor.actor) {
             DestroyCarryActor();
             return;
-        }
+        } else if (managedActor.actor == nullptr) {
+            return;
+        } 
 
         if (managedActor.item == ITEM_COJIRO) {
             // Cojiro is a quiet boy!!!!
@@ -189,6 +190,7 @@ void RegisterTradeItemUses() {
 
         Actor* actor = va_arg(args, Actor*);
 
+        //feather spawns are white, and cojiro is blue, so they'd look out of place.
         if (actor == managedActor.actor) { 
             if (managedActor.item == ITEM_COJIRO) {
                 *should = true;
@@ -198,7 +200,7 @@ void RegisterTradeItemUses() {
 
     COND_VB_SHOULD(VB_IGNORE_ITEM_BLOCKING_STATE, shouldRegister, {
         Player* player = va_arg(args, Player*);
-        //state not (exclusively) caused by any trade item
+        //state not (exclusively) caused by any trade item, so don't override
         if (managedActor.actor == nullptr || player->heldActor == nullptr || (player->stateFlags1 & PLAYER_STATE1_IN_CUTSCENE) || func_8008F128(player)) {
             return;
         }
@@ -209,32 +211,60 @@ void RegisterTradeItemUses() {
 
     });
 
+    COND_VB_SHOULD(VB_PUTAWAY_BECAUSE_DISABLED_ITEM_BUTTONS, shouldRegister, {
+        Player* player = GET_PLAYER(gPlayState);
+        if (player->itemAction >= PLAYER_IA_SWORD_MASTER && player ->itemAction <= PLAYER_IA_SWORD_BIGGORON) {
+            *should = BtnEquippedWith(2, ITEM_SWORD_BROKEN, ITEM_SAW) < 0;
+        }
+    });
+
     COND_VB_SHOULD(VB_CHANGE_HELD_ITEM_AND_USE_ITEM, shouldRegister, {
         int32_t usedItem = va_arg(args, int32_t);
         Player* player = GET_PLAYER(gPlayState);
+        
+        //retain their trade-quest usage
+        if (player->stateFlags1 & (PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS)) {
+            return;
+        }
 
         switch (usedItem) {
+            // portable cucco
             case ITEM_COJIRO:
             case ITEM_POCKET_CUCCO:
             case ITEM_CHICKEN:
-                if (!(player->stateFlags1 & (PLAYER_STATE1_FRIENDLY_ACTOR_FOCUS))) {
-                    *should = false;                    
-                    if (usedItem != managedActor.item) {
-                        managedActor.id = ACTOR_EN_NIW;
-                        managedActor.item = usedItem;
-                        SpawnCarryActor(player, gPlayState);
-                        if (usedItem == ITEM_POCKET_CUCCO) {
-                            Actor_SetScale(managedActor.actor, 0.005f);
-                            managedActor.actor->shape.yOffset +=500.0f;
-                        } else if (usedItem == ITEM_COJIRO){
-                            managedActor.color.r = 0x34;
-                            managedActor.color.g = 0x55;
-                            managedActor.color.b = 0xA6;
-                            managedActor.color.a = 0xFF;
-                        }
+                *should = false;
+                //allow z movement
+                if (player->stateFlags1 & (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_PARALLEL)) {
+                    return;
+                }
+                if (managedActor.item != usedItem) {
+                    managedActor.id = ACTOR_EN_NIW;
+                    managedActor.item = usedItem;
+                    SpawnCarryActor(player, gPlayState);
+                    if (usedItem == ITEM_POCKET_CUCCO) {
+                        Actor_SetScale(managedActor.actor, 0.005f);
+                        managedActor.actor->shape.yOffset +=500.0f;
+                    } else if (usedItem == ITEM_COJIRO){
+                        managedActor.color.r = 0x34;
+                        managedActor.color.g = 0x55;
+                        managedActor.color.b = 0xA6;
+                        managedActor.color.a = 0xFF;
                     }
                 }
                 break;
+            // alt swords
+            case ITEM_SWORD_BROKEN:
+            case ITEM_SAW:
+                *should = false;
+                //todo - implement proper usage rather than shimming sword, & drop VB_PUTAWAY_BECAUSE_DISABLED_ITEM_BUTTONS hook
+                //Player_UseItem(gPlayState, player, ITEM_SWORD_KOKIRI);
+                Player_UseItem(gPlayState, player, ITEM_SWORD_BGS);
+                DestroyCarryActor();
+                break;
+            // soome items shouldn't impact held actors, exclude here
+            case ITEM_LENS:
+                break;
+            //kill instead of drop
             default:
                 DestroyCarryActor();
                 break;
@@ -259,25 +289,23 @@ void RegisterTradeItemUses() {
         }
     });
 
+    //todo - id & fix bug where still can throw mid-sidehop?
     COND_VB_SHOULD(VB_THROW_OR_PUT_DOWN_HELD_ITEM, shouldRegister, {
         Input* input = va_arg(args, Input*);
         Player* player = GET_PLAYER(gPlayState);
 
-        if (managedActor.actor != nullptr && managedActor.id == ACTOR_EN_NIW) {
-            //can't swap between cuccos or re-deploy a cucco that's already out
-            if (CHECK_BTN_ANY(input->press.button, BtnEquippedWith(4, ITEM_CHICKEN, ITEM_POCKET_CUCCO, ITEM_COJIRO, ITEM_NONE))) {
-                *should = false;
-            } else if (CHECK_BTN_ANY(input->press.button, BTN_A)) {
-                *should = false;
-                DestroyCarryActor(6);
+        if (managedActor.actor == nullptr || player->heldActor != managedActor.actor) {
+            return;
+        }
+        
+        *should = false;
 
-            //destroy actor, don't intercept
-            } else if (CHECK_BTN_ANY(input->press.button, BTN_B |
-                (BTN_CLEFT | BTN_CDOWN | BTN_CRIGHT | BTN_DUP | BTN_DDOWN | BTN_DLEFT | BTN_DRIGHT) &
-                ~BtnEquippedWith(4, ITEM_CHICKEN, ITEM_POCKET_CUCCO, ITEM_COJIRO, ITEM_NONE))) {
-                DestroyCarryActor();
+        if (managedActor.id == ACTOR_EN_NIW) {
+            if (CHECK_BTN_ANY(input->press.button, BTN_A) && !(player->stateFlags1 & (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_PARALLEL))) {
+                DestroyCarryActor(6);
             }
         }
+    
     });
 }
 
