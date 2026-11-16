@@ -1,15 +1,16 @@
 #include <libultraship/bridge/consolevariablebridge.h>
-
+#include "assets/objects/object_link_boy/object_link_boy.h"
+#include "assets/objects/object_link_child/object_link_child.h"
+#include "assets/objects/object_custom_equip/object_custom_equip.h"
 #include "assets/objects/gameplay_keep/gameplay_keep.h"
+
 #include "assets/objects/object_niw/object_niw.h"
 #include "soh/Enhancements/game-interactor/GameInteractor.h"
 #include "soh/ResourceManagerHelpers.h"
 #include "soh/ShipInit.hpp"
 
 extern "C" {
-#include <z64.h>
-#include "functions.h"
-#include "macros.h"
+#include "global.h"
 
 extern PlayState* gPlayState;
 extern SaveContext gSaveContext;
@@ -31,9 +32,35 @@ typedef struct TradeItemActor {
     int32_t item;
     Color_RGBA8 color;
     s8 delayedDestroy;
+    s32 storage;
 } TradeItemActor;
 
 static TradeItemActor managedActor;
+
+
+void ClearManagedData() {
+        switch (managedActor.item) {
+            case ITEM_COJIRO:
+            case ITEM_POCKET_CUCCO:
+            case ITEM_CHICKEN:
+                managedActor.delayedDestroy = 0;
+                managedActor.actor = nullptr;
+                managedActor.color.r = 0xFF;
+                managedActor.color.g = 0xFF;
+                managedActor.color.b = 0xFF;
+                managedActor.color.a = 0xFF;
+                break;
+            case ITEM_SAW:
+                //disable custom model
+            case ITEM_SWORD_BROKEN:
+                gSaveContext.swordHealth = managedActor.storage;
+                managedActor.storage = 0;
+            default:
+                break;
+        }
+        managedActor.id = ACTOR_PLAYER; //probably something better to do here.
+        managedActor.item = ITEM_NONE;
+}
 
 void SpawnCarryActor(Player* player, PlayState* playState) {
     if (managedActor.actor != nullptr) {
@@ -70,13 +97,7 @@ void DestroyCarryActor(u8 delay) {
         managedActor.delayedDestroy = delay;
     } else if (!(managedActor.actor == nullptr) && --managedActor.delayedDestroy <= 0) {
         Actor_Kill(managedActor.actor);
-        managedActor.delayedDestroy = 0;
-        managedActor.actor = nullptr;
-        managedActor.color.r = 0xFF;
-        managedActor.color.g = 0xFF;
-        managedActor.color.b = 0xFF;
-        managedActor.color.a = 0xFF;
-        managedActor.item = ITEM_NONE;
+        ClearManagedData();
     } 
     
 }
@@ -85,19 +106,24 @@ void DestroyCarryActor() {
     DestroyCarryActor(0);
 }
 
-void enableCuccoColoring() {
-    const char* skele[] = { gCuccoHeadDL, gCuccoLeftFootDL, gCuccoLeftWingDL, gCuccoRightFootDL, gCuccoRightWingDL, gCuccoNeckDL, gCuccoTailAndUndersideDL };
-    int offset[] = { 6, 6, 6, 6, 6, 6, 13 };
+void EnvPatchSkele(int size, const char* skele[], int offset[]) {
     char patchName[32];
-    int i;
-    for (i = 0; i < ARRAY_COUNT(skele); i++) {
-        snprintf(patchName, sizeof(patchName), "tint %d", i);
+
+    for (int i = 0; i < size; i++) {
+        snprintf(patchName, sizeof(patchName), "env%d", i);
         //patch skeleton to allow env shaders
         ResourceMgr_PatchGfxByName(
             skele[i], patchName, offset[i], 
             gsDPSetCombineLERP(TEXEL0, 0, SHADE, 0, 0, 0, 0, TEXEL0, ENVIRONMENT, 0, COMBINED, 0, 0, 0, 0, COMBINED)
         );
     }
+}
+
+void EnableCuccoColoring() {
+    const char* skele[] = { gCuccoHeadDL, gCuccoLeftFootDL, gCuccoLeftWingDL, gCuccoRightFootDL, gCuccoRightWingDL, gCuccoNeckDL, gCuccoTailAndUndersideDL };
+    int offset[] = { 6, 6, 6, 6, 6, 6, 13 };
+    int size = ARRAY_COUNT(skele);
+    EnvPatchSkele(size, skele, offset);
 }
 
 
@@ -108,7 +134,6 @@ int BtnEquippedWith(int qty, ...) {
     u8 equipped = 0;
     int item;
     while (qty-- > 0) {
-        //BTN_CLEFT, BTN_CDOWN, BTN_CRIGHT, BTN_DUP, BTN_DDOWN, BTN_DLEFT, BTN_DRIGHT
         item = va_arg(args, int);
         if (C_BTN_ITEM(0) == item) {
             equipped |= BTN_CLEFT;
@@ -119,17 +144,20 @@ int BtnEquippedWith(int qty, ...) {
         if (C_BTN_ITEM(2) == item) {
             equipped |= BTN_CRIGHT;
         } 
-        if (DPAD_ITEM(0) == item) {
-            equipped |= BTN_DUP;
-        } 
-        if (DPAD_ITEM(1) == item) {
-            equipped |= BTN_DDOWN;
-        } 
-        if (DPAD_ITEM(2) == item) {
-            equipped |= BTN_DLEFT;
-        } 
-        if (DPAD_ITEM(3) == item) {
-            equipped |= BTN_DRIGHT;
+
+        if (CVarGetInteger(CVAR_ENHANCEMENT("DpadEquips"), 0) != 0) {
+            if (DPAD_ITEM(0) == item) {
+                equipped |= BTN_DUP;
+            }
+            if (DPAD_ITEM(1) == item) {
+                equipped |= BTN_DDOWN;
+            }
+            if (DPAD_ITEM(2) == item) {
+                equipped |= BTN_DLEFT;
+            }
+            if (DPAD_ITEM(3) == item) {
+                equipped |= BTN_DRIGHT;
+            }
         }
     }
     va_end(args);
@@ -141,7 +169,7 @@ void RegisterTradeItemUses() {
     bool shouldRegister = true;
 
     COND_HOOK(OnSceneInit, shouldRegister, [](int32_t) {
-        enableCuccoColoring();
+        EnableCuccoColoring();
     });
     
     COND_HOOK(OnPlayerUpdate, shouldRegister, []() {
@@ -228,8 +256,13 @@ void RegisterTradeItemUses() {
         }
 
         switch (usedItem) {
+            //trade items:
             // portable cucco
             case ITEM_COJIRO:
+                managedActor.color.r = 0x34;
+                managedActor.color.g = 0x55;
+                managedActor.color.b = 0xA6;
+                managedActor.color.a = 0xFF;
             case ITEM_POCKET_CUCCO:
             case ITEM_CHICKEN:
                 *should = false;
@@ -244,24 +277,46 @@ void RegisterTradeItemUses() {
                     if (usedItem == ITEM_POCKET_CUCCO) {
                         Actor_SetScale(managedActor.actor, 0.005f);
                         managedActor.actor->shape.yOffset +=500.0f;
-                    } else if (usedItem == ITEM_COJIRO){
-                        managedActor.color.r = 0x34;
-                        managedActor.color.g = 0x55;
-                        managedActor.color.b = 0xA6;
-                        managedActor.color.a = 0xFF;
                     }
                 }
                 break;
             // alt swords
-            case ITEM_SWORD_BROKEN:
             case ITEM_SAW:
+                // load custom model
+                // see customequipment.cpp
+              /*const bool isAdult = gSaveContext.linkAge == LINK_AGE_ADULT;
+                Gfx* dList = nullptr;
+                Gfx* held = ResourceMgr_LoadGfxByName(gCustomBrokenLongswordDL);
+                // to be stolen wholesale from customequipment.cpp to avoid updating it
+                Gfx* hand = ResourceMgr_LoadGfxByName(isAdult ? gLinkAdultLeftHandClosedNearDL : gLinkChildLeftFistNearDL);
+                BuildHandItemDL(gPlayState, &dList, hand, held, !isAdult); */
+                //hide sheath
+                Player_UseItem(gPlayState, player, ITEM_SWORD_KOKIRI);
+                DestroyCarryActor();
+                break;
+            case ITEM_SWORD_BROKEN:
                 *should = false;
-                //todo - implement proper usage rather than shimming sword, & drop VB_PUTAWAY_BECAUSE_DISABLED_ITEM_BUTTONS hook
-                //Player_UseItem(gPlayState, player, ITEM_SWORD_KOKIRI);
+                //todo - implement proper usage:
+                //hide sheath since these come from pocket
+                //add logic to return these to default when sword used
+                managedActor.item = usedItem;
+                managedActor.storage = gSaveContext.swordHealth;
+                gSaveContext.swordHealth = 0;
                 Player_UseItem(gPlayState, player, ITEM_SWORD_BGS);
                 DestroyCarryActor();
                 break;
-            // soome items shouldn't impact held actors, exclude here
+            //other items:
+            case ITEM_SWORD_BGS:
+            case ITEM_SWORD_MASTER:
+            case ITEM_SWORD_KOKIRI:
+            case ITEM_SWORD_KNIFE:
+                if (managedActor.storage > 0) {
+                    gSaveContext.swordHealth = managedActor.storage;
+                }
+                //ensure reset to default model
+                DestroyCarryActor();
+                break;
+            // soome items shouldn't impact casuse, exclude here
             case ITEM_LENS:
                 break;
             //kill instead of drop
@@ -289,12 +344,12 @@ void RegisterTradeItemUses() {
         }
     });
 
-    //todo - id & fix bug where still can throw mid-sidehop?
+    //todo - id & fix bug where still can throw mid-air in sidehop?
     COND_VB_SHOULD(VB_THROW_OR_PUT_DOWN_HELD_ITEM, shouldRegister, {
         Input* input = va_arg(args, Input*);
         Player* player = GET_PLAYER(gPlayState);
 
-        if (managedActor.actor == nullptr || player->heldActor != managedActor.actor) {
+        if (!*should || managedActor.actor == nullptr || player->heldActor != managedActor.actor) {
             return;
         }
         
@@ -302,7 +357,7 @@ void RegisterTradeItemUses() {
 
         if (managedActor.id == ACTOR_EN_NIW) {
             if (CHECK_BTN_ANY(input->press.button, BTN_A) && !(player->stateFlags1 & (PLAYER_STATE1_HOSTILE_LOCK_ON | PLAYER_STATE1_PARALLEL))) {
-                DestroyCarryActor(6);
+                DestroyCarryActor((player->actor.bgCheckFlags & BGCHECKFLAG_GROUND) ? 6 : 0);
             }
         }
     

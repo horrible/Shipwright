@@ -9652,8 +9652,10 @@ void Player_Action_8084411C(Player* this, PlayState* play) {
             if (CVarGetInteger(CVAR_ENHANCEMENT("DpadEquips"), 0) != 0) {
                 buttonsToCheck |= BTN_DUP | BTN_DDOWN | BTN_DLEFT | BTN_DRIGHT;
             }
-            if (!func_80835644(play, this, heldActor) && (heldActor->id == ACTOR_EN_NIW) &&
-                CHECK_BTN_ANY(sControlInput->press.button, buttonsToCheck)) {
+            if (GameInteractor_Should(VB_THROW_OR_PUT_DOWN_HELD_ITEM,
+                !func_80835644(play, this, heldActor) &&
+                (heldActor->id == ACTOR_EN_NIW) &&
+                CHECK_BTN_ANY(sControlInput->press.button, buttonsToCheck))) {
                 func_8084409C(play, this, this->linearVelocity + 2.0f, this->actor.velocity.y + 2.0f);
             }
         }
