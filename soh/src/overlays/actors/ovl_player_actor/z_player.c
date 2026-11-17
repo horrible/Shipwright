@@ -5793,7 +5793,7 @@ void func_8083AA10(Player* this, PlayState* play) {
                 if (this->hoverBootsTimer != 0) {
                     this->actor.velocity.y = 1.0f;
 
-                    if (GameInteractor_Should(VB_SET_STATIC_PREV_FLOOR_TYPE, true, this)) {
+                    if (GameInteractor_Should(VB_SET_STATIC_PREV_FLOOR_TYPE, true, this, &sPrevFloorProperty)) {
                         sPrevFloorProperty = FLOOR_PROPERTY_9;
                     }
                     return;
@@ -11171,7 +11171,7 @@ void Player_ProcessSceneCollision(PlayState* play, Player* this) {
     f32 ceilingCheckHeight;
     u32 flags;
 
-    if (GameInteractor_Should(VB_SET_STATIC_PREV_FLOOR_TYPE, true, this)) {
+    if (GameInteractor_Should(VB_SET_STATIC_PREV_FLOOR_TYPE, true, this, &sPrevFloorProperty)) {
         sPrevFloorProperty = this->floorProperty;
     }
 
