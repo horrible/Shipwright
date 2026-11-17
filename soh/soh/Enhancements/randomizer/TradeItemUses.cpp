@@ -282,6 +282,7 @@ void RegisterTradeItemUses() {
                 break;
             // alt swords
             case ITEM_SAW:
+                *should = false;
                 // load custom model
                 // see customequipment.cpp
               /*const bool isAdult = gSaveContext.linkAge == LINK_AGE_ADULT;
