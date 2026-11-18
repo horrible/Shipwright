@@ -30,24 +30,6 @@ static u8& RocsFeathersRemaining() {
     return gSaveContext.ship.quest.data.randomizer.rocsFeathersRemaining;
 }
 
-static void BuildRocsFeatherGetMessage(uint16_t* textId, bool* loadFromMessageTable) {
-    CustomMessage msg;
-
-    msg = CustomMessage(
-        "You got %bRoc's Feather%w!&You now have %b[[d]]%w |use|uses| of it!",
-        "Du erhältst %bGreifenfeder%w!&Du kannst sie nun %b[[d]]%w-mal einsetzen!",
-        "Vous obtenez la %bPlume de Roc%w!&Vous pouvez l'utiliser %b[[d]]%w fois!");
-
-    if (rocsConsumable) {
-        msg.InsertNumber(RocsFeathersRemaining());
-    } else {
-        msg.InsertNumber(RocsFeathersAcquired());
-    }
-    msg.AutoFormat(ITEM_ROCS_FEATHER);
-    msg.LoadIntoFont();
-    *loadFromMessageTable = false;
-}
-
 void UseRocsFeather(PlayState* playState, Player* player) {
     if (RocsFeathersRemaining() > 0) {
         RocsFeathersRemaining()--;
@@ -139,8 +121,6 @@ void RegisterRocsFeather() {
             memcpy(gPlayState->pauseCtx.nameSegment, textureName, strlen(textureName) + 1);
         }
     });
-
-    COND_ID_HOOK(OnOpenText, TEXT_RANDOMIZER_CUSTOM_ITEM, shouldRegister, BuildRocsFeatherGetMessage);
 }
 
 static RegisterShipInitFunc registerRocsFeather(RegisterRocsFeather);
