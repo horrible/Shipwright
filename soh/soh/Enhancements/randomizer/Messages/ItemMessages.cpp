@@ -161,7 +161,6 @@ void BuildRocsFeatherMessage(CustomMessage& msg) {
                         "Du erhältst %bGreifenfeder%w!&Du kannst sie nun %b[[d]]%w-mal einsetzen!",
                         "Vous obtenez la %bPlume de Roc%w!&Vous pouvez l'utiliser %b[[d]]%w fois!");
 
-    // triggers before the item is actually given, so these will be off if not at max
     if (consumable) {
         msg.InsertNumber(current < max ? current + 1 : current);
     } else {

@@ -1,8 +1,6 @@
 #include <libultraship/bridge/consolevariablebridge.h>
 
 #include "soh/Enhancements/game-interactor/GameInteractor.h"
-#include "soh/Enhancements/custom-message/CustomMessageManager.h"
-#include "soh/Enhancements/custom-message/CustomMessageTypes.h"
 #include "soh/Enhancements/randomizer/SeedContext.h"
 #include "soh/ShipInit.hpp"
 
@@ -15,8 +13,6 @@ extern "C" {
 extern PlayState* gPlayState;
 extern SaveContext gSaveContext;
 }
-
-#define TEXT_RANDOMIZER_CUSTOM_ITEM 0xF8
 
 static uint8_t groundTimer = 0;
 static f32 effectsScale = 1.0f;
