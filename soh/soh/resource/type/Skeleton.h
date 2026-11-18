@@ -86,10 +86,12 @@ struct SkeletonPatchInfo {
 class SkeletonPatcher {
   public:
     static void RegisterSkeleton(std::string& path, SkelAnime* skelAnime);
+    static SkeletonPatchInfo RegisterSkeleton(std::string& path, SkelAnime* skelAnime, bool isLocalSkelOverride);
     static void UnregisterSkeleton(SkelAnime* skelAnime);
     static void ClearSkeletons();
     static void UpdateSkeletons();
     static void UpdateCustomSkeletons();
+    static void UpdateCustomSkeletonFromPath(const std::string& skeletonPath, SkeletonPatchInfo& skel);
 
     static std::vector<SkeletonPatchInfo> skeletons;
 
@@ -98,7 +100,6 @@ class SkeletonPatcher {
     static bool IsLinkSkeletonPath(const std::string& path);
     static bool IsLocalPlayerSkelAnime(SkelAnime* skelAnime);
     static void UpdateTunicSkeletons(SkeletonPatchInfo& skel);
-    static void UpdateCustomSkeletonFromPath(const std::string& skeletonPath, SkeletonPatchInfo& skel);
 };
 
 } // namespace SOH
