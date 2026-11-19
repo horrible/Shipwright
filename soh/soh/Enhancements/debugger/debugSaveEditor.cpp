@@ -1092,7 +1092,7 @@ void DrawInventoryTab() {
             }
 
             // Show ammo input below items that have ammo
-            if (item != ITEM_NONE && item != ITEM_ROCS_FEATHER) {
+            if (item != ITEM_NONE) {
                 // Check if this item has ammo by checking if it's in the ammo items list
                 bool hasAmmo = false;
                 for (uint32_t ammoIndex = 0; ammoIndex < 16; ammoIndex++) {
@@ -1105,6 +1105,21 @@ void DrawInventoryTab() {
                     ImGui::PushItemWidth(IMAGE_SIZE);
                     PushStyleInput(THEME_COLOR);
                     ImGui::InputScalar("##ammoInput", ImGuiDataType_S8, &AMMO(item));
+                    PopStyleInput();
+                    ImGui::PopItemWidth();
+                } else if ((item == ITEM_NAYRUS_LOVE && RAND_GET_OPTION(RSK_NAYRUS_LOVE_USES).Get() > 0) ||
+                           item == ITEM_ROCS_FEATHER) {
+                    ImGui::PushItemWidth(IMAGE_SIZE);
+                    PushStyleInput(THEME_COLOR);
+                    if (item == ITEM_NAYRUS_LOVE) {
+                        ImGui::InputScalar("##ammoInput", ImGuiDataType_S8,
+                                           &gSaveContext.ship.quest.data.randomizer.nayrusLoveUses);
+                    } else {
+                        u8& qty = gSaveContext.ship.quest.data.randomizer.rocsFeathersRemaining;
+                        if (ImGui::InputScalar("##ammoInput", ImGuiDataType_S8, &qty)) {
+                            gSaveContext.ship.quest.data.randomizer.rocsFeathersAcquired = qty;
+                        }
+                    }
                     PopStyleInput();
                     ImGui::PopItemWidth();
                 }
