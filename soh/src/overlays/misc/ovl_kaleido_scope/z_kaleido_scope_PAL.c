@@ -1268,7 +1268,6 @@ void KaleidoScope_SwitchPage(PauseContext* pauseCtx, u8 pt) {
         pauseCtx->cursorSpecialPos = PAUSE_CURSOR_PAGE_LEFT;
     }
 
-
     if (GameInteractor_Should(VB_SHOULD_DIM_BUTTON, true, &gSaveContext.buttonStatus)) {
         for (int buttonIndex = 1; buttonIndex < ARRAY_COUNT(gSaveContext.buttonStatus); buttonIndex++) {
             gSaveContext.buttonStatus[buttonIndex] = D_8082AB6C[pauseCtx->pageIndex + pt][buttonIndex];
@@ -2283,7 +2282,7 @@ void KaleidoScope_DrawInfoPanel(PlayState* play) {
                 gDPPipeSync(POLY_OPA_DISP++);
                 gDPSetPrimColor(POLY_OPA_DISP++, 0, 0, 255, 200, 0, 255);
 
-                if (!GameInteractor_Should(VB_CHANGE_SUBSCREEN_NAME_TEX, false, &POLY_OPA_DISP)) {
+                if (!GameInteractor_Should(VB_CHANGE_SUBSCREEN_INFO_LABEL_TEX, false, &POLY_OPA_DISP)) {
                     if (pauseCtx->cursorSpecialPos == PAUSE_CURSOR_PAGE_LEFT) {
                         POLY_OPA_DISP = KaleidoScope_QuadTextureIA8(
                             POLY_OPA_DISP, D_8082AD78[pauseCtx->pageIndex][gSaveContext.language], 128, 16, 0);
@@ -3535,7 +3534,7 @@ void KaleidoScope_Draw(PlayState* play) {
 
         KaleidoScope_SetView(pauseCtx, 0.0f, 0.0f, 64.0f);
 
-        if (!((pauseCtx->state >= 8) && (pauseCtx->state <= 0x11)) && !GameInteractor_Should(VB_CHANGE_SUBSCREEN_NAME_PANEL, false, &KaleidoScope_DrawInfoPanel)) {
+        if (!((pauseCtx->state >= 8) && (pauseCtx->state <= 0x11)) && !GameInteractor_Should(VB_CHANGE_SUBSCREEN_INFO_PANEL, false, &KaleidoScope_DrawInfoPanel)) {
             KaleidoScope_DrawInfoPanel(play);
         }
     }
@@ -3869,7 +3868,7 @@ void KaleidoScope_Update(PlayState* play) {
             KaleidoScope_UpdateCursorSize(&play->pauseCtx);
         }
 
-        if (pauseCtx->state == 6 && !GameInteractor_Should(VB_CHANGE_SUBSCREEN_NAME_PANEL, false, &KaleidoScope_UpdateNamePanel)) {
+        if (pauseCtx->state == 6 && !GameInteractor_Should(VB_CHANGE_SUBSCREEN_INFO_PANEL, false, &KaleidoScope_UpdateNamePanel)) {
             KaleidoScope_UpdateNamePanel(play);
         }
     }
@@ -4260,7 +4259,7 @@ void KaleidoScope_Update(PlayState* play) {
         case 5:
             pauseCtx->alpha += (u16)(255 / (WREG(6) + WREG(4)));
             func_808265BC(play);
-            if (pauseCtx->state == 6 && !GameInteractor_Should(VB_CHANGE_SUBSCREEN_NAME_PANEL, false, &KaleidoScope_UpdateNamePanel)) {
+            if (pauseCtx->state == 6 && !GameInteractor_Should(VB_CHANGE_SUBSCREEN_INFO_PANEL, false, &KaleidoScope_UpdateNamePanel)) {
                 KaleidoScope_UpdateNamePanel(play);
             }
             break;

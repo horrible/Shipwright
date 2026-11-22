@@ -10,7 +10,7 @@ extern PlayState* gPlayState;
 
 //extremely rough example of a tracker, cannibalized from the kaleido item screen
 void DrawTrackerSubScreen() {
-    
+
     OPEN_DISPS(gPlayState->state.gfxCtx);
 
     Gfx_SetupDL_42Opa(gPlayState->state.gfxCtx);

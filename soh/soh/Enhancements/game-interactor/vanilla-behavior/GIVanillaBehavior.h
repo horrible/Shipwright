@@ -399,16 +399,17 @@ typedef enum {
     // ```c
     // false
     // ```
-    // #### `noargs`
-    VB_CHANGE_SUBSCREEN_NAME_PANEL,
+    // #### `args`
+    // - `std::add_pointer_t<void(PlayState*)>` (Infopanel Draw Function)
+    VB_CHANGE_SUBSCREEN_INFO_PANEL,
 
     // #### `result`
     // ```c
     // false
     // ```
     // #### `args`
-    // - `POLY_OPA_DISP` (Gfx*) #define POLY_OPA_DISP __gfxCtx->polyOpa.p
-    VB_CHANGE_SUBSCREEN_NAME_TEX,
+    // - `POLY_OPA_DISP` (Gfx*)
+    VB_CHANGE_SUBSCREEN_INFO_LABEL_TEX,
 
     // #### `result`
     // ```c
