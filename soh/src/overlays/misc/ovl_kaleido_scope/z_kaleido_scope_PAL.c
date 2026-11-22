@@ -1268,8 +1268,11 @@ void KaleidoScope_SwitchPage(PauseContext* pauseCtx, u8 pt) {
         pauseCtx->cursorSpecialPos = PAUSE_CURSOR_PAGE_LEFT;
     }
 
-    for (int buttonIndex = 1; buttonIndex < ARRAY_COUNT(gSaveContext.buttonStatus); buttonIndex++) {
-        gSaveContext.buttonStatus[buttonIndex] = D_8082AB6C[pauseCtx->pageIndex + pt][buttonIndex];
+
+    if (GameInteractor_Should(VB_SHOULD_DIM_BUTTON, true, &gSaveContext.buttonStatus)) {
+        for (int buttonIndex = 1; buttonIndex < ARRAY_COUNT(gSaveContext.buttonStatus); buttonIndex++) {
+            gSaveContext.buttonStatus[buttonIndex] = D_8082AB6C[pauseCtx->pageIndex + pt][buttonIndex];
+        }
     }
 
     if ((CVarGetInteger(CVAR_ENHANCEMENT("AssignableTunicsAndBoots"), 0) != 0) &&
@@ -1589,95 +1592,12 @@ void KaleidoScope_DrawPages(PlayState* play, GraphicsContext* gfxCtx) {
             }
         }
 
-        if (pauseCtx->pageIndex) { // pageIndex != PAUSE_ITEM
-            gDPPipeSync(OVERLAY_DISP++);
-            gDPSetCombineMode(OVERLAY_DISP++, G_CC_MODULATEIA, G_CC_MODULATEIA);
+        //handle drawing pages externally
+        if (!GameInteractor_Should(VB_CHANGE_SUBSCREEN, false, &play->pauseCtx.pageIndex)) {
+            if (pauseCtx->pageIndex) { // pageIndex != PAUSE_ITEM
+                gDPPipeSync(OVERLAY_DISP++);
+                gDPSetCombineMode(OVERLAY_DISP++, G_CC_MODULATEIA, G_CC_MODULATEIA);
 
-            Matrix_Translate(0.0f, (f32)WREG(2) / 100.0f, -(f32)WREG(3) / 100.0f, MTXMODE_NEW);
-            Matrix_Scale(0.78f, 0.78f, 0.78f, MTXMODE_APPLY);
-            Matrix_RotateX(-pauseCtx->unk_1F4 / 100.0f, MTXMODE_APPLY);
-
-            gSPMatrix(POLY_OPA_DISP++, MATRIX_NEWMTX(gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-
-            POLY_OPA_DISP = KaleidoScope_DrawPageSections(POLY_OPA_DISP, pauseCtx->itemPageVtx,
-                                                          sSelectItemTexs[gSaveContext.language]);
-
-            KaleidoScope_DrawItemSelect(play);
-        }
-
-        if (pauseCtx->pageIndex != PAUSE_EQUIP) {
-            gDPPipeSync(POLY_OPA_DISP++);
-            gDPSetCombineMode(POLY_OPA_DISP++, G_CC_MODULATEIA, G_CC_MODULATEIA);
-
-            Matrix_Translate(-(f32)WREG(3) / 100.0f, (f32)WREG(2) / 100.0f, 0.0f, MTXMODE_NEW);
-            Matrix_Scale(0.78f, 0.78f, 0.78f, MTXMODE_APPLY);
-            Matrix_RotateZ(pauseCtx->unk_1F8 / 100.0f, MTXMODE_APPLY);
-            Matrix_RotateY(1.57f, MTXMODE_APPLY);
-
-            gSPMatrix(POLY_OPA_DISP++, MATRIX_NEWMTX(gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-
-            POLY_OPA_DISP = KaleidoScope_DrawPageSections(POLY_OPA_DISP, pauseCtx->equipPageVtx,
-                                                          sEquipmentTexs[gSaveContext.language]);
-
-            KaleidoScope_DrawEquipment(play);
-        }
-
-        if (pauseCtx->pageIndex != PAUSE_QUEST) {
-            gDPPipeSync(POLY_OPA_DISP++);
-            gDPSetTextureFilter(POLY_OPA_DISP++, G_TF_BILERP);
-            gDPSetCombineMode(POLY_OPA_DISP++, G_CC_MODULATEIA, G_CC_MODULATEIA);
-
-            Matrix_Translate(0.0f, (f32)WREG(2) / 100.0f, (f32)WREG(3) / 100.0f, MTXMODE_NEW);
-            Matrix_Scale(0.78f, 0.78f, 0.78f, MTXMODE_APPLY);
-            Matrix_RotateX(pauseCtx->unk_200 / 100.0f, MTXMODE_APPLY);
-            Matrix_RotateY(3.14f, MTXMODE_APPLY);
-
-            gSPMatrix(POLY_OPA_DISP++, MATRIX_NEWMTX(gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-
-            if (pauseCtx->randoQuestMode) {
-                POLY_OPA_DISP = KaleidoScope_DrawPageSections(POLY_OPA_DISP, pauseCtx->saveVtx, sGameOverTexs);
-                RandoKaleido_DrawMiscCollectibles(play);
-            } else {
-                POLY_OPA_DISP = KaleidoScope_DrawPageSections(POLY_OPA_DISP, pauseCtx->questPageVtx,
-                                                              sQuestStatusTexs[gSaveContext.language]);
-                KaleidoScope_DrawQuestStatus(play, gfxCtx);
-            }
-        }
-
-        if (pauseCtx->pageIndex != PAUSE_MAP) {
-            gDPPipeSync(POLY_OPA_DISP++);
-
-            gDPSetCombineMode(POLY_OPA_DISP++, G_CC_MODULATEIA, G_CC_MODULATEIA);
-
-            Matrix_Translate((f32)WREG(3) / 100.0f, (f32)WREG(2) / 100.0f, 0.0f, MTXMODE_NEW);
-            Matrix_Scale(0.78f, 0.78f, 0.78f, MTXMODE_APPLY);
-            Matrix_RotateZ(-pauseCtx->unk_1FC / 100.0f, MTXMODE_APPLY);
-            Matrix_RotateY(-1.57f, MTXMODE_APPLY);
-
-            gSPMatrix(POLY_OPA_DISP++, MATRIX_NEWMTX(gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-
-            POLY_OPA_DISP =
-                KaleidoScope_DrawPageSections(POLY_OPA_DISP, pauseCtx->mapPageVtx, sMapTexs[gSaveContext.language]);
-
-            if (sInDungeonScene) {
-                KaleidoScope_DrawDungeonMap(play, gfxCtx);
-                Gfx_SetupDL_42Opa(gfxCtx);
-
-                gDPSetCombineMode(POLY_OPA_DISP++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-
-                if (CHECK_DUNGEON_ITEM(DUNGEON_COMPASS, gSaveContext.mapIndex)) {
-                    PauseMapMark_Draw(play);
-                }
-            } else {
-                KaleidoScope_DrawWorldMap(play, gfxCtx);
-            }
-        }
-
-        gDPPipeSync(POLY_OPA_DISP++);
-        gDPSetCombineMode(POLY_OPA_DISP++, G_CC_MODULATEIA, G_CC_MODULATEIA);
-
-        switch (pauseCtx->pageIndex) {
-            case PAUSE_ITEM:
                 Matrix_Translate(0.0f, (f32)WREG(2) / 100.0f, -(f32)WREG(3) / 100.0f, MTXMODE_NEW);
                 Matrix_Scale(0.78f, 0.78f, 0.78f, MTXMODE_APPLY);
                 Matrix_RotateX(-pauseCtx->unk_1F4 / 100.0f, MTXMODE_APPLY);
@@ -1685,12 +1605,55 @@ void KaleidoScope_DrawPages(PlayState* play, GraphicsContext* gfxCtx) {
                 gSPMatrix(POLY_OPA_DISP++, MATRIX_NEWMTX(gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
                 POLY_OPA_DISP = KaleidoScope_DrawPageSections(POLY_OPA_DISP, pauseCtx->itemPageVtx,
-                                                              sSelectItemTexs[gSaveContext.language]);
+                                                            sSelectItemTexs[gSaveContext.language]);
 
                 KaleidoScope_DrawItemSelect(play);
-                break;
+            }
 
-            case PAUSE_MAP:
+            if (pauseCtx->pageIndex != PAUSE_EQUIP) {
+                gDPPipeSync(POLY_OPA_DISP++);
+                gDPSetCombineMode(POLY_OPA_DISP++, G_CC_MODULATEIA, G_CC_MODULATEIA);
+
+                Matrix_Translate(-(f32)WREG(3) / 100.0f, (f32)WREG(2) / 100.0f, 0.0f, MTXMODE_NEW);
+                Matrix_Scale(0.78f, 0.78f, 0.78f, MTXMODE_APPLY);
+                Matrix_RotateZ(pauseCtx->unk_1F8 / 100.0f, MTXMODE_APPLY);
+                Matrix_RotateY(1.57f, MTXMODE_APPLY);
+
+                gSPMatrix(POLY_OPA_DISP++, MATRIX_NEWMTX(gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+
+                POLY_OPA_DISP = KaleidoScope_DrawPageSections(POLY_OPA_DISP, pauseCtx->equipPageVtx,
+                                                            sEquipmentTexs[gSaveContext.language]);
+
+                KaleidoScope_DrawEquipment(play);
+            }
+
+            if (pauseCtx->pageIndex != PAUSE_QUEST) {
+                gDPPipeSync(POLY_OPA_DISP++);
+                gDPSetTextureFilter(POLY_OPA_DISP++, G_TF_BILERP);
+                gDPSetCombineMode(POLY_OPA_DISP++, G_CC_MODULATEIA, G_CC_MODULATEIA);
+
+                Matrix_Translate(0.0f, (f32)WREG(2) / 100.0f, (f32)WREG(3) / 100.0f, MTXMODE_NEW);
+                Matrix_Scale(0.78f, 0.78f, 0.78f, MTXMODE_APPLY);
+                Matrix_RotateX(pauseCtx->unk_200 / 100.0f, MTXMODE_APPLY);
+                Matrix_RotateY(3.14f, MTXMODE_APPLY);
+
+                gSPMatrix(POLY_OPA_DISP++, MATRIX_NEWMTX(gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+
+                if (pauseCtx->randoQuestMode) {
+                    POLY_OPA_DISP = KaleidoScope_DrawPageSections(POLY_OPA_DISP, pauseCtx->saveVtx, sGameOverTexs);
+                    RandoKaleido_DrawMiscCollectibles(play);
+                } else {
+                    POLY_OPA_DISP = KaleidoScope_DrawPageSections(POLY_OPA_DISP, pauseCtx->questPageVtx,
+                                                                sQuestStatusTexs[gSaveContext.language]);
+                    KaleidoScope_DrawQuestStatus(play, gfxCtx);
+                }
+            }
+
+            if (pauseCtx->pageIndex != PAUSE_MAP) {
+                gDPPipeSync(POLY_OPA_DISP++);
+
+                gDPSetCombineMode(POLY_OPA_DISP++, G_CC_MODULATEIA, G_CC_MODULATEIA);
+
                 Matrix_Translate((f32)WREG(3) / 100.0f, (f32)WREG(2) / 100.0f, 0.0f, MTXMODE_NEW);
                 Matrix_Scale(0.78f, 0.78f, 0.78f, MTXMODE_APPLY);
                 Matrix_RotateZ(-pauseCtx->unk_1FC / 100.0f, MTXMODE_APPLY);
@@ -1707,59 +1670,102 @@ void KaleidoScope_DrawPages(PlayState* play, GraphicsContext* gfxCtx) {
 
                     gDPSetCombineMode(POLY_OPA_DISP++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
 
-                    if (pauseCtx->cursorSpecialPos == 0) {
-                        KaleidoScope_DrawCursor(play, PAUSE_MAP);
-                    }
-
                     if (CHECK_DUNGEON_ITEM(DUNGEON_COMPASS, gSaveContext.mapIndex)) {
                         PauseMapMark_Draw(play);
                     }
                 } else {
                     KaleidoScope_DrawWorldMap(play, gfxCtx);
                 }
-                break;
+            }
 
-            case PAUSE_QUEST:
-                gDPSetTextureFilter(POLY_OPA_DISP++, G_TF_BILERP);
+            gDPPipeSync(POLY_OPA_DISP++);
+            gDPSetCombineMode(POLY_OPA_DISP++, G_CC_MODULATEIA, G_CC_MODULATEIA);
 
-                Matrix_Translate(0.0f, (f32)WREG(2) / 100.0f, (f32)WREG(3) / 100.0f, MTXMODE_NEW);
-                Matrix_Scale(0.78f, 0.78f, 0.78f, MTXMODE_APPLY);
-                Matrix_RotateX(pauseCtx->unk_200 / 100.0f, MTXMODE_APPLY);
-                Matrix_RotateY(3.14f, MTXMODE_APPLY);
+            switch (pauseCtx->pageIndex) {
+                case PAUSE_ITEM:
+                    Matrix_Translate(0.0f, (f32)WREG(2) / 100.0f, -(f32)WREG(3) / 100.0f, MTXMODE_NEW);
+                    Matrix_Scale(0.78f, 0.78f, 0.78f, MTXMODE_APPLY);
+                    Matrix_RotateX(-pauseCtx->unk_1F4 / 100.0f, MTXMODE_APPLY);
 
-                gSPMatrix(POLY_OPA_DISP++, MATRIX_NEWMTX(gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+                    gSPMatrix(POLY_OPA_DISP++, MATRIX_NEWMTX(gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
-                if (pauseCtx->randoQuestMode) {
-                    POLY_OPA_DISP = KaleidoScope_DrawPageSections(POLY_OPA_DISP, pauseCtx->saveVtx, sGameOverTexs);
-                    RandoKaleido_DrawMiscCollectibles(play);
-                } else {
-                    POLY_OPA_DISP = KaleidoScope_DrawPageSections(POLY_OPA_DISP, pauseCtx->questPageVtx,
-                                                                  sQuestStatusTexs[gSaveContext.language]);
-                    KaleidoScope_DrawQuestStatus(play, gfxCtx);
-                }
+                    POLY_OPA_DISP = KaleidoScope_DrawPageSections(POLY_OPA_DISP, pauseCtx->itemPageVtx,
+                                                                sSelectItemTexs[gSaveContext.language]);
 
-                if (pauseCtx->cursorSpecialPos == 0) {
-                    KaleidoScope_DrawCursor(play, PAUSE_QUEST);
-                }
-                break;
+                    KaleidoScope_DrawItemSelect(play);
+                    break;
 
-            case PAUSE_EQUIP:
-                Matrix_Translate(-(f32)WREG(3) / 100.0f, (f32)WREG(2) / 100.0f, 0.0f, MTXMODE_NEW);
-                Matrix_Scale(0.78f, 0.78f, 0.78f, MTXMODE_APPLY);
-                Matrix_RotateZ(pauseCtx->unk_1F8 / 100.0f, MTXMODE_APPLY);
-                Matrix_RotateY(1.57f, MTXMODE_APPLY);
+                case PAUSE_MAP:
+                    Matrix_Translate((f32)WREG(3) / 100.0f, (f32)WREG(2) / 100.0f, 0.0f, MTXMODE_NEW);
+                    Matrix_Scale(0.78f, 0.78f, 0.78f, MTXMODE_APPLY);
+                    Matrix_RotateZ(-pauseCtx->unk_1FC / 100.0f, MTXMODE_APPLY);
+                    Matrix_RotateY(-1.57f, MTXMODE_APPLY);
 
-                gSPMatrix(POLY_OPA_DISP++, MATRIX_NEWMTX(gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+                    gSPMatrix(POLY_OPA_DISP++, MATRIX_NEWMTX(gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
-                POLY_OPA_DISP = KaleidoScope_DrawPageSections(POLY_OPA_DISP, pauseCtx->equipPageVtx,
-                                                              sEquipmentTexs[gSaveContext.language]);
+                    POLY_OPA_DISP =
+                        KaleidoScope_DrawPageSections(POLY_OPA_DISP, pauseCtx->mapPageVtx, sMapTexs[gSaveContext.language]);
 
-                KaleidoScope_DrawEquipment(play);
+                    if (sInDungeonScene) {
+                        KaleidoScope_DrawDungeonMap(play, gfxCtx);
+                        Gfx_SetupDL_42Opa(gfxCtx);
 
-                if (pauseCtx->cursorSpecialPos == 0) {
-                    KaleidoScope_DrawCursor(play, PAUSE_EQUIP);
-                }
-                break;
+                        gDPSetCombineMode(POLY_OPA_DISP++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+
+                        if (pauseCtx->cursorSpecialPos == 0) {
+                            KaleidoScope_DrawCursor(play, PAUSE_MAP);
+                        }
+
+                        if (CHECK_DUNGEON_ITEM(DUNGEON_COMPASS, gSaveContext.mapIndex)) {
+                            PauseMapMark_Draw(play);
+                        }
+                    } else {
+                        KaleidoScope_DrawWorldMap(play, gfxCtx);
+                    }
+                    break;
+
+                case PAUSE_QUEST:
+                    gDPSetTextureFilter(POLY_OPA_DISP++, G_TF_BILERP);
+
+                    Matrix_Translate(0.0f, (f32)WREG(2) / 100.0f, (f32)WREG(3) / 100.0f, MTXMODE_NEW);
+                    Matrix_Scale(0.78f, 0.78f, 0.78f, MTXMODE_APPLY);
+                    Matrix_RotateX(pauseCtx->unk_200 / 100.0f, MTXMODE_APPLY);
+                    Matrix_RotateY(3.14f, MTXMODE_APPLY);
+
+                    gSPMatrix(POLY_OPA_DISP++, MATRIX_NEWMTX(gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+
+                    if (pauseCtx->randoQuestMode) {
+                        POLY_OPA_DISP = KaleidoScope_DrawPageSections(POLY_OPA_DISP, pauseCtx->saveVtx, sGameOverTexs);
+                        RandoKaleido_DrawMiscCollectibles(play);
+                    } else {
+                        POLY_OPA_DISP = KaleidoScope_DrawPageSections(POLY_OPA_DISP, pauseCtx->questPageVtx,
+                                                                    sQuestStatusTexs[gSaveContext.language]);
+                        KaleidoScope_DrawQuestStatus(play, gfxCtx);
+                    }
+
+                    if (pauseCtx->cursorSpecialPos == 0) {
+                        KaleidoScope_DrawCursor(play, PAUSE_QUEST);
+                    }
+                    break;
+
+                case PAUSE_EQUIP:
+                    Matrix_Translate(-(f32)WREG(3) / 100.0f, (f32)WREG(2) / 100.0f, 0.0f, MTXMODE_NEW);
+                    Matrix_Scale(0.78f, 0.78f, 0.78f, MTXMODE_APPLY);
+                    Matrix_RotateZ(pauseCtx->unk_1F8 / 100.0f, MTXMODE_APPLY);
+                    Matrix_RotateY(1.57f, MTXMODE_APPLY);
+
+                    gSPMatrix(POLY_OPA_DISP++, MATRIX_NEWMTX(gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+
+                    POLY_OPA_DISP = KaleidoScope_DrawPageSections(POLY_OPA_DISP, pauseCtx->equipPageVtx,
+                                                                sEquipmentTexs[gSaveContext.language]);
+
+                    KaleidoScope_DrawEquipment(play);
+
+                    if (pauseCtx->cursorSpecialPos == 0) {
+                        KaleidoScope_DrawCursor(play, PAUSE_EQUIP);
+                    }
+                    break;
+            }
         }
     }
 
@@ -3862,7 +3868,7 @@ void KaleidoScope_Update(PlayState* play) {
             KaleidoScope_UpdateCursorSize(&play->pauseCtx);
         }
 
-        if (pauseCtx->state == 6) {
+        if (pauseCtx->state == 6 && !GameInteractor_Should(VB_CHANGE_SUBSCREEN_NAME_PANEL, false)) {
             KaleidoScope_UpdateNamePanel(play);
         }
     }
@@ -4253,7 +4259,7 @@ void KaleidoScope_Update(PlayState* play) {
         case 5:
             pauseCtx->alpha += (u16)(255 / (WREG(6) + WREG(4)));
             func_808265BC(play);
-            if (pauseCtx->state == 6) {
+            if (pauseCtx->state == 6 && !GameInteractor_Should(VB_CHANGE_SUBSCREEN_NAME_PANEL, false)) {
                 KaleidoScope_UpdateNamePanel(play);
             }
             break;

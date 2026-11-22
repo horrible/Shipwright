@@ -387,6 +387,11 @@ typedef enum {
     // - `int32_t` (item)
     VB_CHANGE_HELD_ITEM_AND_USE_ITEM,
 
+    VB_CHANGE_SUBSCREEN,
+    VB_CHANGE_SUBSCREEN_CURSOR,
+    VB_CHANGE_SUBSCREEN_BG,
+    VB_CHANGE_SUBSCREEN_NAME_PANEL,
+
     // #### `result`
     // ```c
     // gSaveContext.rupees < 200
@@ -2973,6 +2978,8 @@ typedef enum {
     // #### `args`
     // - `*f32` (sFishOnHandLength)
     VB_SHOULD_CHECK_FOR_FISHING_RECORD,
+
+    VB_SHOULD_DIM_BUTTON,
 
     // #### `result`
     // ##### In `Fishing_HandleOwnerDialog` - `LINK_AGE_CHILD`
