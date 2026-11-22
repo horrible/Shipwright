@@ -65,7 +65,6 @@ typedef struct DisplayOpts {
 static u16 customSubScreen[4];
 
 void DrawSubScreenAtFace (u16 drawIndex, DisplayOpts opts) {
-        LUSLOG_ERROR("LIZDEBUG!!! in DrawSubScreenAtFace!!! START");
         PauseContext* pauseCtx = &gPlayState->pauseCtx;
         OPEN_DISPS(gPlayState->state.gfxCtx);
         gDPPipeSync(OVERLAY_DISP++);
@@ -77,27 +76,23 @@ void DrawSubScreenAtFace (u16 drawIndex, DisplayOpts opts) {
         gDPSetCombineMode(POLY_OPA_DISP++, G_CC_MODULATEIA, G_CC_MODULATEIA);
         switch (drawIndex) {
             case PAUSE_ITEM:
-                LUSLOG_ERROR("LIZDEBUG!!! in DrawSubScreenAtFace!!! PAUSE_ITEM");
                 Matrix_Translate(0.0f, (f32)WREG(2) / 100.0f, -(f32)WREG(3) / 100.0f, MTXMODE_NEW);
                 Matrix_Scale(0.78f, 0.78f, 0.78f, MTXMODE_APPLY);
                 Matrix_RotateX(-pauseCtx->unk_1F4 / 100.0f, MTXMODE_APPLY);
                 break;
             case PAUSE_MAP:
-                LUSLOG_ERROR("LIZDEBUG!!! in DrawSubScreenAtFace!!! PAUSE_MAP");
                 Matrix_Translate((f32)WREG(3) / 100.0f, (f32)WREG(2) / 100.0f, 0.0f, MTXMODE_NEW);
                 Matrix_Scale(0.78f, 0.78f, 0.78f, MTXMODE_APPLY);
                 Matrix_RotateZ(-pauseCtx->unk_1FC / 100.0f, MTXMODE_APPLY);
                 Matrix_RotateY(-1.57f, MTXMODE_APPLY);
                 break;
             case PAUSE_QUEST:
-                LUSLOG_ERROR("LIZDEBUG!!! in DrawSubScreenAtFace!!! PAUSE_QUEST");
                 Matrix_Translate(0.0f, (f32)WREG(2) / 100.0f, (f32)WREG(3) / 100.0f, MTXMODE_NEW);
                 Matrix_Scale(0.78f, 0.78f, 0.78f, MTXMODE_APPLY);
                 Matrix_RotateX(pauseCtx->unk_200 / 100.0f, MTXMODE_APPLY);
                 Matrix_RotateY(3.14f, MTXMODE_APPLY);
                 break;
             case PAUSE_EQUIP:
-                LUSLOG_ERROR("LIZDEBUG!!! in DrawSubScreenAtFace!!! PAUSE_EQUIP");
                 Matrix_Translate(-(f32)WREG(3) / 100.0f, (f32)WREG(2) / 100.0f, 0.0f, MTXMODE_NEW);
                 Matrix_Scale(0.78f, 0.78f, 0.78f, MTXMODE_APPLY);
                 Matrix_RotateZ(pauseCtx->unk_1F8 / 100.0f, MTXMODE_APPLY);
@@ -109,13 +104,11 @@ void DrawSubScreenAtFace (u16 drawIndex, DisplayOpts opts) {
         //for vanilla screens
         //override pageIndex to let vanilla functions display correctly
         if(opts.screenIndex >= 0 && opts.screenIndex < 4) {
-            LUSLOG_ERROR("LIZDEBUG!!! in DrawSubScreenAtFace!!! screenIndex %d", opts.screenIndex);
             u16 oldIndex = pauseCtx->pageIndex;
             pauseCtx->pageIndex = opts.screenIndex;
             opts.drawPageFunc();
             //some vanilla functions need a second function call for cursor or compass functions
             if (opts.runPostDraw) {
-        LUSLOG_ERROR("LIZDEBUG!!! in DrawSubScreenAtFace!!! runPostDraw");
                 Gfx_SetupDL_42Opa(gPlayState->state.gfxCtx);
                 gDPSetCombineMode(POLY_OPA_DISP++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
                 opts.postDrawFunc();
@@ -125,7 +118,6 @@ void DrawSubScreenAtFace (u16 drawIndex, DisplayOpts opts) {
         } else {
             opts.drawPageFunc();
             if (opts.runPostDraw) {
-        LUSLOG_ERROR("LIZDEBUG!!! in DrawSubScreenAtFace!!! runPostDraw");
                 Gfx_SetupDL_42Opa(gPlayState->state.gfxCtx);
                 gDPSetCombineMode(POLY_OPA_DISP++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
                 opts.postDrawFunc();
@@ -204,7 +196,6 @@ void RegisterChangeSubScreen() {
     bool shouldRegister = true;
 
     COND_VB_SHOULD(VB_CHANGE_SUBSCREEN, shouldRegister, {
-        LUSLOG_ERROR("LIZDEBUG!!! in VB_CHANGE_SUBSCREEN!!! START");
         u16 pageIndex = *va_arg(args, u16*);
         *should = true;
         PauseContext* pauseCtx = &gPlayState->pauseCtx;
@@ -237,7 +228,6 @@ void RegisterChangeSubScreen() {
                 DrawSubScreenAtFace(PAUSE_EQUIP, DrawEquipScreen(PAUSE_EQUIP));
                 break;
         }
-        LUSLOG_ERROR("LIZDEBUG!!! in VB_CHANGE_SUBSCREEN!!! END!! customSubScreen %d drawn on %d", customSubScreen[pauseCtx->pageIndex], pauseCtx->pageIndex);
     });
 
     COND_VB_SHOULD(VB_CHANGE_SUBSCREEN_NAME_PANEL, shouldRegister, {
