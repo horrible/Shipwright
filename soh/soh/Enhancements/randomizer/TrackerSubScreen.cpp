@@ -6,10 +6,9 @@ extern "C" {
 #include "overlays/misc/ovl_kaleido_scope/z_kaleido_scope.h"
 #include "soh/frame_interpolation.h"
 extern PlayState* gPlayState;
-extern "C" Gfx* KaleidoScope_DrawPageSections(Gfx* gfx, Vtx* vertices, void** textures);
-extern "C" void KaleidoScope_UpdateNamePanel(PlayState* gPlayState);
 }
 
+//extremely rough example of a tracker, cannibalized from the kaleido item screen
 void DrawTrackerSubScreen() {
     
     OPEN_DISPS(gPlayState->state.gfxCtx);

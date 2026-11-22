@@ -387,9 +387,28 @@ typedef enum {
     // - `int32_t` (item)
     VB_CHANGE_HELD_ITEM_AND_USE_ITEM,
 
+    // #### `result`
+    // ```c
+    // false
+    // ```
+    // #### `args`
+    // - `pageIndex` (u16)
     VB_CHANGE_SUBSCREEN,
-    VB_CHANGE_SUBSCREEN_CURSOR,
-    VB_CHANGE_SUBSCREEN_BG,
+
+
+    // #### `result`
+    // ```c
+    // false
+    // ```
+    // #### `args`
+    // - `POLY_OPA_DISP` (Gfx*) #define POLY_OPA_DISP __gfxCtx->polyOpa.p
+    VB_CHANGE_SUBSCREEN_NAME,
+
+    // #### `result`
+    // ```c
+    // false
+    // ```
+    // #### `noargs`
     VB_CHANGE_SUBSCREEN_NAME_PANEL,
 
     // #### `result`
@@ -2979,6 +2998,13 @@ typedef enum {
     // - `*f32` (sFishOnHandLength)
     VB_SHOULD_CHECK_FOR_FISHING_RECORD,
 
+
+    // #### `result`
+    // ```c
+    // true
+    // ```
+    // #### `args`
+    // - `u8 [9]` (buttonStatus)
     VB_SHOULD_DIM_BUTTON,
 
     // #### `result`
