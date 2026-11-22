@@ -395,6 +395,12 @@ typedef enum {
     // - `pageIndex` (u16)
     VB_CHANGE_SUBSCREEN,
 
+    // #### `result`
+    // ```c
+    // false
+    // ```
+    // #### `noargs`
+    VB_CHANGE_SUBSCREEN_NAME_PANEL,
 
     // #### `result`
     // ```c
@@ -402,14 +408,7 @@ typedef enum {
     // ```
     // #### `args`
     // - `POLY_OPA_DISP` (Gfx*) #define POLY_OPA_DISP __gfxCtx->polyOpa.p
-    VB_CHANGE_SUBSCREEN_NAME,
-
-    // #### `result`
-    // ```c
-    // false
-    // ```
-    // #### `noargs`
-    VB_CHANGE_SUBSCREEN_NAME_PANEL,
+    VB_CHANGE_SUBSCREEN_NAME_TEX,
 
     // #### `result`
     // ```c

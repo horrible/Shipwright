@@ -14,6 +14,8 @@
 
 extern "C" {
 #include "variables.h"
+#include "soh/cvar_prefixes.h"
+
 }
 
 namespace SohGui {
@@ -834,6 +836,17 @@ void SohMenu::AddMenuRandomizer() {
         .Options(WindowButtonOptions().Tooltip("Toggles the Item Tracker.").EmbedWindow(false));
 
     AddWidget(path, "Item Tracker Settings", WIDGET_SEPARATOR_TEXT);
+
+    AddWidget(path, "Item Tracker Subscreen", WIDGET_CVAR_CHECKBOX)
+        .CVar(CVAR_RANDOMIZER_ENHANCEMENT("EnableItemTrackerSubscreen"))
+        .Options(CheckboxOptions().Tooltip(
+            "Insert an item tracker subscreen into the pause menu. May impact pause-menu related glitches."))
+        .PreFunc([](WidgetInfo& info) {
+            if (CVarGetInteger(CVAR_ENHANCEMENT("EnableReplaceSubscreen"), 0) == 0) {
+                info.options->disabled = true;
+                info.options->disabledTooltip = "Must use the replacement menu drawing for this to be possible.";
+            } });
+
     AddWidget(path, "Popout Item Tracker Settings", WIDGET_WINDOW_BUTTON)
         .CVar(CVAR_WINDOW("ItemTrackerSettings"))
         .RaceDisable(false)

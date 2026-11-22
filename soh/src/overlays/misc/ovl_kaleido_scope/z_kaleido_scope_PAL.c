@@ -1592,7 +1592,6 @@ void KaleidoScope_DrawPages(PlayState* play, GraphicsContext* gfxCtx) {
             }
         }
 
-        //handle drawing pages externally
         if (!GameInteractor_Should(VB_CHANGE_SUBSCREEN, false, &play->pauseCtx.pageIndex)) {
             if (pauseCtx->pageIndex) { // pageIndex != PAUSE_ITEM
                 gDPPipeSync(OVERLAY_DISP++);
@@ -2284,7 +2283,7 @@ void KaleidoScope_DrawInfoPanel(PlayState* play) {
                 gDPPipeSync(POLY_OPA_DISP++);
                 gDPSetPrimColor(POLY_OPA_DISP++, 0, 0, 255, 200, 0, 255);
 
-                if (!GameInteractor_Should(VB_CHANGE_SUBSCREEN_NAME, false, &POLY_OPA_DISP)) {
+                if (!GameInteractor_Should(VB_CHANGE_SUBSCREEN_NAME_TEX, false, &POLY_OPA_DISP)) {
                     if (pauseCtx->cursorSpecialPos == PAUSE_CURSOR_PAGE_LEFT) {
                         POLY_OPA_DISP = KaleidoScope_QuadTextureIA8(
                             POLY_OPA_DISP, D_8082AD78[pauseCtx->pageIndex][gSaveContext.language], 128, 16, 0);
@@ -3536,7 +3535,7 @@ void KaleidoScope_Draw(PlayState* play) {
 
         KaleidoScope_SetView(pauseCtx, 0.0f, 0.0f, 64.0f);
 
-        if (!((pauseCtx->state >= 8) && (pauseCtx->state <= 0x11))) {
+        if (!((pauseCtx->state >= 8) && (pauseCtx->state <= 0x11)) && !GameInteractor_Should(VB_CHANGE_SUBSCREEN_NAME_PANEL, false, &KaleidoScope_DrawInfoPanel)) {
             KaleidoScope_DrawInfoPanel(play);
         }
     }
@@ -3870,7 +3869,7 @@ void KaleidoScope_Update(PlayState* play) {
             KaleidoScope_UpdateCursorSize(&play->pauseCtx);
         }
 
-        if (pauseCtx->state == 6 && !GameInteractor_Should(VB_CHANGE_SUBSCREEN_NAME_PANEL, false)) {
+        if (pauseCtx->state == 6 && !GameInteractor_Should(VB_CHANGE_SUBSCREEN_NAME_PANEL, false, &KaleidoScope_UpdateNamePanel)) {
             KaleidoScope_UpdateNamePanel(play);
         }
     }
@@ -4261,7 +4260,7 @@ void KaleidoScope_Update(PlayState* play) {
         case 5:
             pauseCtx->alpha += (u16)(255 / (WREG(6) + WREG(4)));
             func_808265BC(play);
-            if (pauseCtx->state == 6 && !GameInteractor_Should(VB_CHANGE_SUBSCREEN_NAME_PANEL, false)) {
+            if (pauseCtx->state == 6 && !GameInteractor_Should(VB_CHANGE_SUBSCREEN_NAME_PANEL, false, &KaleidoScope_UpdateNamePanel)) {
                 KaleidoScope_UpdateNamePanel(play);
             }
             break;

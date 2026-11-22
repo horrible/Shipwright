@@ -288,6 +288,10 @@ void SohMenu::AddMenuEnhancements() {
         .CVar(CVAR_ENHANCEMENT("PauseWarp"))
         .Options(CheckboxOptions().Tooltip(
             "Selection of warp song in pause menu initiates a warp. Disables song playback."));
+    AddWidget(path, "Replace Menu Draw", WIDGET_CVAR_CHECKBOX)
+        .CVar(CVAR_ENHANCEMENT("EnableReplaceSubscreen"))
+        .Options(CheckboxOptions().Tooltip(
+            "Use a reimplimentation of the menu draw that allows for additional subscreens. May impact pause menu-related glitches."));
 
     path.column = SECTION_COLUMN_2;
     AddWidget(path, "Controls", WIDGET_SEPARATOR_TEXT);

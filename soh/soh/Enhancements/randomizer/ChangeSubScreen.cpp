@@ -1,8 +1,10 @@
 #include "soh/Enhancements/game-interactor/GameInteractor.h"
+#include "soh/Enhancements/randomizer/randomizer.h"
 #include "soh/ShipInit.hpp"
 #include "soh/frame_interpolation.h"
 #include "ChangeSubScreen.h"
 #include "TrackerSubScreen.h"
+#include "soh/cvar_prefixes.h"
 
 extern "C" {
 #include "overlays/misc/ovl_kaleido_scope/z_kaleido_scope.h"
@@ -11,6 +13,12 @@ extern PlayState* gPlayState;
 extern "C" Gfx* KaleidoScope_DrawPageSections(Gfx* gfx, Vtx* vertices, void** textures);
 extern "C" void KaleidoScope_UpdateNamePanel(PlayState* play);
 }
+
+#define CVAR_SUBSCREEN_NAME CVAR_ENHANCEMENT("EnableReplaceSubscreen")
+#define CVAR_SUBSCREEN_ACTIVE (bool) CVarGetInteger(CVAR_SUBSCREEN_NAME, 0)
+
+#define CVAR_SUBSCREEN_TRACKER_ITEM CVAR_RANDOMIZER_ENHANCEMENT("EnableItemTrackerSubscreen")
+#define CVAR_SUBSCREEN_TRACKER_ITEM_ACTIVE  (bool) CVarGetInteger(CVAR_SUBSCREEN_TRACKER_ITEM, 0)
 
 //i think this is everything a custom screen will need. was going to drop vanilla index but then i realized MM screens will likely need it too
 typedef struct SubScreenOpts {
@@ -27,7 +35,7 @@ typedef struct SubScreenOpts {
 static SubScreenOpts activeSubScreens[4];
 static std::vector<std::function<SubScreenOpts(u16)>> screens; //this code assumes that screens.size() will be 4 at a minimum, so if you change it to be less, keep that in mind.
 static s32 activeIndex = 3; //index = screen index, vanilla starts on PAUSE_EQUIP (page 3)
-static u16 previousPage; //page = 0-3 pause screen face.
+static u16 activePage; //page = 0-3 active face saved from previous frame
 
 void DrawSubScreenAtPage (u16 drawPage, SubScreenOpts opts) {
         PauseContext* pauseCtx = &gPlayState->pauseCtx;
@@ -128,7 +136,7 @@ SubScreenOpts DrawMapScreen(u16 index) { // PAUSE_MAP 1 - Map Subscreen - can be
         PAUSE_MAP,
         false,
         //CHECK_DUNGEON_ITEM should always be 0 when not in a dungeon, but it looked wonky and i didnt want to check it so :shrug:
-        (bool) ((gPlayState->sceneNum >= 0) && (gPlayState->sceneNum <= 24) && CHECK_DUNGEON_ITEM(DUNGEON_COMPASS, gSaveContext.mapIndex)), 
+        (bool) ((gPlayState->sceneNum >= 0) && (gPlayState->sceneNum <= 24) && CHECK_DUNGEON_ITEM(DUNGEON_COMPASS, gSaveContext.mapIndex)),
         AssumeGlobal(PauseMapMark_Draw)
     };
 }
@@ -141,9 +149,9 @@ SubScreenOpts DrawQuestScreen(u16 index) { //PAUSE_QUEST 2 - Quest Item Subscree
         PAUSE_QUEST,
         G_TF_BILERP,
         //draw cursor when visible, & not on Z/L or R
-        (gPlayState->pauseCtx.cursorSpecialPos == 0 && gPlayState->pauseCtx.pageIndex == index), 
+        (gPlayState->pauseCtx.cursorSpecialPos == 0 && gPlayState->pauseCtx.pageIndex == index),
         //might only be needed because of KaleidoScope_DrawCursor's weird PAUSE_QUEST check (or might not be needed atp)
-        AssumeGlobal(KaleidoScope_DrawCursor, (u16) ((gPlayState->pauseCtx.pageIndex + 4 - index + PAUSE_QUEST) % 4)) 
+        AssumeGlobal(KaleidoScope_DrawCursor, (u16) ((gPlayState->pauseCtx.pageIndex + 4 - index + PAUSE_QUEST) % 4))
 
     };
 }
@@ -156,7 +164,7 @@ SubScreenOpts DrawEquipScreen(u16 index) { //PAUSE_EQUIP 3 - Equipment Subscreen
         (void **) sEquipmentTexs[gSaveContext.language],
         PAUSE_EQUIP,
         false,
-        (gPlayState->pauseCtx.cursorSpecialPos == 0 && gPlayState->pauseCtx.pageIndex == index), 
+        (gPlayState->pauseCtx.cursorSpecialPos == 0 && gPlayState->pauseCtx.pageIndex == index),
         AssumeGlobal(KaleidoScope_DrawCursor, (u16) ((gPlayState->pauseCtx.pageIndex + 4 - index + PAUSE_EQUIP) % 4))
     };
 }
@@ -171,30 +179,36 @@ SubScreenOpts DrawTrackerScreen(u16 index) {
     };
 }
 
-void RegisterChangeSubScreen() {
-    bool shouldRegister = true;
-
+void ConfiguredEnabledSubScreens() {
+    screens.clear();
     screens.emplace_back(DrawMapScreen);
     screens.emplace_back(DrawQuestScreen);
     screens.emplace_back(DrawEquipScreen);
     screens.emplace_back(DrawItemScreen);
-    screens.emplace_back(DrawTrackerScreen);
+    if (CVAR_SUBSCREEN_TRACKER_ITEM_ACTIVE) {
+        screens.emplace_back(DrawTrackerScreen);
+    }
+    activeIndex = 3;
+    activePage = 3;
+}
 
-    COND_VB_SHOULD(VB_CHANGE_SUBSCREEN, shouldRegister, {
+void RegisterChangeSubScreen() {
+
+    COND_VB_SHOULD(VB_CHANGE_SUBSCREEN, CVAR_SUBSCREEN_ACTIVE, {
         u16 pageIndex = *va_arg(args, u16*);
         *should = true;
         PauseContext* pauseCtx = &gPlayState->pauseCtx;
         static bool isIncrement; //want this to persist because most frames will be neither
 
         //these will only be different when a page was just swapped
-        if (pageIndex == previousPage + 1 || (pageIndex == 0 && previousPage == 3)) {
+        if (pageIndex == activePage + 1 || (pageIndex == 0 && activePage == 3)) {
             if (activeIndex < screens.size() - 1) {
                 activeIndex++;
             } else {
                 activeIndex = 0;
             }
             isIncrement = true;
-        } else if (pageIndex == previousPage - 1 || (pageIndex == 3 && previousPage == 0)) {
+        } else if (pageIndex == activePage - 1 || (pageIndex == 3 && activePage == 0)) {
             if (activeIndex > 0) {
                 activeIndex--;
             } else {
@@ -211,43 +225,28 @@ void RegisterChangeSubScreen() {
 
         DrawSubScreenAtPage(prev, screens.at(activeIndex > 0 ? activeIndex - 1 : (s32) (screens.size()-1))(prev));
         DrawSubScreenAtPage(next, screens.at(activeIndex < screens.size() - 1 ? activeIndex + 1 : 0)(next));
-        //real todo - actually test it
-        //todo - attempt to fix display suttering to having off be -2 instead when going down
         if (isIncrement) {
-            DrawSubScreenAtPage(off, screens.at(activeIndex < screens.size() - 2 ? activeIndex + 2 : 1)(off));
+            DrawSubScreenAtPage(off, screens.at((activeIndex + 2) % screens.size())(off));
         } else {
-            DrawSubScreenAtPage(off, screens.at(activeIndex > 1 ? activeIndex - 2 : (s32) (screens.size() - 2))(off));
+            DrawSubScreenAtPage(off, screens.at((activeIndex + screens.size()- 2) % screens.size())(off));
         }
         DrawSubScreenAtPage(curr, screens.at(activeIndex)(curr));
 
         //most of the time this will just be setting it back to the same value. and that's good.
-        previousPage = pageIndex;
+        activePage = pageIndex;
     });
 
-    COND_VB_SHOULD(VB_CHANGE_SUBSCREEN_NAME, shouldRegister, {
-        Gfx** gfx = va_arg(args, Gfx**);
-        u16 pageIndex = gPlayState->pauseCtx.pageIndex;
-        s16 cursorPos = gPlayState->pauseCtx.cursorSpecialPos;
-        //the adjacent names should always be accurate because we swap screens out when they're opposite to the active one
-        //it'd probably be more accurate to do based on the actual screens vector instead, but that's probably much slower
-        if (cursorPos == PAUSE_CURSOR_PAGE_LEFT) {
-            *should = true;
-            *gfx = KaleidoScope_QuadTextureIA8(*gfx, activeSubScreens[(pageIndex + 3) % 4].name, 128, 16, 0);
-        } else if (cursorPos == PAUSE_CURSOR_PAGE_RIGHT) {
-            *should = true;
-            *gfx = KaleidoScope_QuadTextureIA8(*gfx, activeSubScreens[(pageIndex + 1) % 4].name, 128, 16, 0);
-        }
-    });
-
-    COND_VB_SHOULD(VB_CHANGE_SUBSCREEN_NAME_PANEL, shouldRegister, {
+    //covers KaleidoScope_DrawInfoPanel and KaleidoScope_UpdateNamePanel
+    COND_VB_SHOULD(VB_CHANGE_SUBSCREEN_NAME_PANEL, CVAR_SUBSCREEN_ACTIVE, {
         u16 displayedIndex = gPlayState->pauseCtx.pageIndex;
 
         if (displayedIndex != activeSubScreens[displayedIndex].vanillaIndex) {
             *should = true;
+            void (*drawPanelFunc)(PlayState*) = va_arg(args, std::add_pointer_t<void(PlayState*)>);
             //retain vanilla functionality for vanilla screens
             if (activeSubScreens[displayedIndex].vanillaIndex <= 3) {
                 gPlayState->pauseCtx.pageIndex = activeSubScreens[displayedIndex].vanillaIndex;
-                KaleidoScope_UpdateNamePanel(gPlayState);
+                drawPanelFunc(gPlayState);
                 gPlayState->pauseCtx.pageIndex = displayedIndex;
             } else {
                 //okay NOW do custom subscreen updates
@@ -256,7 +255,22 @@ void RegisterChangeSubScreen() {
         }
     });
 
-    COND_VB_SHOULD(VB_SHOULD_DIM_BUTTON, shouldRegister, {
+    //this should is nested within VB_CHANGE_SUBSCREEN_NAME_PANEL, so we're pulling the activePage directly rather than whichever is simulated
+    COND_VB_SHOULD(VB_CHANGE_SUBSCREEN_NAME_TEX, CVAR_SUBSCREEN_ACTIVE, {
+        Gfx** gfx = va_arg(args, Gfx**);
+        s16 cursorPos = gPlayState->pauseCtx.cursorSpecialPos;
+        //the adjacent names should always be accurate because we swap screens out when they're opposite to the active one
+        //it'd probably be more accurate to do based on the actual screens vector instead, but that's probably much slower
+        if (cursorPos == PAUSE_CURSOR_PAGE_LEFT) {
+            *should = true;
+            *gfx = KaleidoScope_QuadTextureIA8(*gfx, activeSubScreens[(activePage + 3) % 4].name, 128, 16, 0);
+        } else if (cursorPos == PAUSE_CURSOR_PAGE_RIGHT) {
+            *should = true;
+            *gfx = KaleidoScope_QuadTextureIA8(*gfx, activeSubScreens[(activePage + 1) % 4].name, 128, 16, 0);
+        }
+    });
+
+    COND_VB_SHOULD(VB_SHOULD_DIM_BUTTON, CVAR_SUBSCREEN_ACTIVE, {
         PauseContext* pauseCtx = &gPlayState->pauseCtx;
         *should = false;
         //if subscreen vanilla, then just dim based on index
@@ -295,4 +309,5 @@ void RegisterChangeSubScreen() {
     });
 }
 
-static RegisterShipInitFunc changeSubScreen(RegisterChangeSubScreen);
+static RegisterShipInitFunc enableMenuReplacement(RegisterChangeSubScreen, { CVAR_SUBSCREEN_NAME });
+static RegisterShipInitFunc updateMenuSubScreens(ConfiguredEnabledSubScreens, { CVAR_SUBSCREEN_NAME, CVAR_SUBSCREEN_TRACKER_ITEM });
