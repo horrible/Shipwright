@@ -1,14 +1,16 @@
+#include "libultraship/bridge/consolevariablebridge.h"
+#include "ship/Context.h"
 #include "soh/Enhancements/game-interactor/GameInteractor.h"
 #include "soh/Enhancements/randomizer/randomizer.h"
 #include "soh/Enhancements/kaleido.h"
 #include "soh/cvar_prefixes.h"
 #include "soh/frame_interpolation.h"
 #include "soh/ShipInit.hpp"
+#include "SubScreenKaleidoTexs.h"
 #include "ChangeSubScreen.h"
-#include "TrackerSubScreen.h"
 
 extern "C" {
-#include "overlays/misc/ovl_kaleido_scope/z_kaleido_scope.h"
+#include "src/overlays/misc/ovl_kaleido_scope/z_kaleido_scope.h"
 extern "C" Gfx* KaleidoScope_DrawPageSections(Gfx* gfx, Vtx* vertices, void** textures);
 extern "C" void KaleidoScope_UpdateNamePanel(PlayState* play);
 extern PlayState* gPlayState;
@@ -17,25 +19,27 @@ extern SaveContext gSaveContext;
 
 #define CVAR_SUBSCREEN_NAME CVAR_ENHANCEMENT("EnableReplaceSubscreen")
 #define CVAR_SUBSCREEN_ACTIVE (bool) CVarGetInteger(CVAR_SUBSCREEN_NAME, 0)
-
+/*
 #define CVAR_SUBSCREEN_TRACKER_ITEM CVAR_RANDOMIZER_ENHANCEMENT("EnableItemTrackerSubscreen")
-#define CVAR_SUBSCREEN_TRACKER_ITEM_ACTIVE  (bool) CVarGetInteger(CVAR_SUBSCREEN_TRACKER_ITEM, 0)
+#define CVAR_SUBSCREEN_TRACKER_ITEM_ACTIVE (bool) CVarGetInteger(CVAR_SUBSCREEN_TRACKER_ITEM, 0)
 
-//i think this is everything a custom screen will need. was going to drop vanilla index but then i realized MM screens will likely need it too
-typedef struct SubScreenOpts {
-    std::function<void()> drawPageFunc; // vanilla draws use 1-2 params that ship has in globals, so those are wrapped below & output as noarg funcs
-    void* name; // tex for name that other subscreens should call this one
-    Vtx* bgVtx;
-    void** contentTex;
-    bool drawCursor = false;
-    u16 vanillaIndex = (u16) -1; // i'm underflowing this and you can't stop me (so that it defaults non-0)
-    u16 textureFilter = false;
-    bool runPostDraw = false;
-    std::function<void()> postDrawFunc;
-} SubScreenOpts;
+#define CVAR_SUBSCREEN_TRACKER_ENTRANCE_NAME CVAR_RANDOMIZER_ENHANCEMENT("EnableEntranceTrackerSubscreen")
+#define CVAR_SUBSCREEN_TRACKER_ENTRANCE_ACTIVE (bool) CVarGetInteger(CVAR_SUBSCREEN_TRACKER_ENTRANCE_NAME, 0)
+
+#define CVAR_SUBSCREEN_TRACKER_CHECK_NAME CVAR_RANDOMIZER_ENHANCEMENT("EnableCheckTrackerSubscreen")
+#define CVAR_SUBSCREEN_TRACKER_CHECK_ACTIVE (bool) CVarGetInteger(CVAR_SUBSCREEN_TRACKER_CHECK_NAME, 0)
+
+#define CVAR_SUBSCREEN_TRACKER_HINT_NAME CVAR_RANDOMIZER_ENHANCEMENT("EnableHintTrackerSubscreen")
+#define CVAR_SUBSCREEN_TRACKER_HINT_ACTIVE (bool) CVarGetInteger(CVAR_SUBSCREEN_TRACKER_HINT_NAME, 0)
+
+#define CVAR_SUBSCREEN_TRACKER_SPOILER_NAME CVAR_RANDOMIZER_ENHANCEMENT("EnableSpoilerLogSubscreen")
+#define CVAR_SUBSCREEN_TRACKER_SPOILER_ACTIVE (bool) CVarGetInteger(CVAR_SUBSCREEN_TRACKER_SPOILER_NAME, 0)
+
+#define CVAR_SUBSCREEN_TRACKER_LEGACY_NAME CVAR_RANDOMIZER_ENHANCEMENT("EnableMiscCollectiblesSubscreen")
+#define CVAR_SUBSCREEN_TRACKER_LEGACY_ACTIVE (bool) CVarGetInteger(CVAR_SUBSCREEN_TRACKER_LEGACY_NAME, 0) */
 
 static SubScreenOpts activeSubScreens[4];
-static std::vector<std::function<SubScreenOpts()>> screens; //this code assumes that screens.size() will be 4 at a minimum, so if you change it to be less, keep that in mind.
+static std::vector<std::add_pointer_t<SubScreenOpts()>> screens; //this code assumes that screens.size() will be 4 at a minimum, so if you change it to be less, keep that in mind.
 static s32 activeIndex = 3; //index = screen index, vanilla starts on PAUSE_EQUIP (page 3)
 static u16 activePage; //page = 0-3 active face saved from previous frame
 
@@ -77,7 +81,9 @@ void DrawSubScreenAtPage (u16 drawPage, SubScreenOpts opts) {
                 break;
         }
         gSPMatrix(POLY_OPA_DISP++, MATRIX_NEWMTX(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-        POLY_OPA_DISP = KaleidoScope_DrawPageSections(POLY_OPA_DISP, opts.bgVtx, opts.contentTex);
+        POLY_OPA_DISP = KaleidoScope_DrawPageSections(POLY_OPA_DISP, opts.bgVtx.value_or(gPlayState->pauseCtx.saveVtx), opts.contentTex.value_or((void **) sGameOverTexs));
+        //opts.bgVtx  != nullptr ? opts.bgVtx : ,
+        //opts.contentTex != nullptr ? opts.contentTex : (void **) sGameOverTexs
         //for vanilla screens, override pageIndex to have functions display correctly
         u16 displayedPage = pauseCtx->pageIndex;
         if (opts.vanillaIndex <= 3) {
@@ -119,109 +125,35 @@ std::function<void()> AssumeGlobal(void (*wrappedFunc)(PlayState*, u16 pageIndex
 
 //overload wrapper to assume globally available parameters to normalize expected signature
 std::function<void()> AssumeGlobal(void (*wrappedFunc)(PlayState*)) {
-    return [wrappedFunc](void) {
+    return [wrappedFunc]() {
         wrappedFunc(gPlayState);
     };
 }
 
-SubScreenOpts DrawItemScreen() { //PAUSE_ITEM 0 - Item Subscreen
-    return SubScreenOpts{
-        AssumeGlobal(KaleidoScope_DrawItemSelect),
-        (void *) sScreenTransitionTexs[PAUSE_ITEM][gSaveContext.language],
-        gPlayState->pauseCtx.itemPageVtx,
-        (void **) sSelectItemTexs[gSaveContext.language],
-        false,
-        PAUSE_ITEM,
-        //item screen draws its own cursor
-    };
-}
-
-SubScreenOpts DrawMapScreen() { // PAUSE_MAP 1 - Map Subscreen - can be both dungeon and world
-    return SubScreenOpts{
-        AssumeGlobal((gPlayState->sceneNum >= 0) && (gPlayState->sceneNum <= 24) ? KaleidoScope_DrawDungeonMap : KaleidoScope_DrawWorldMap),
-        (void *) sScreenTransitionTexs[PAUSE_MAP][gSaveContext.language],
-        gPlayState->pauseCtx.mapPageVtx,
-        (void **) sMapTexs[gSaveContext.language],
-        true,
-        PAUSE_MAP,
-        false,
-        //CHECK_DUNGEON_ITEM should always be 0 when not in a dungeon, but it looked wonky and i didnt want to check it so :shrug:
-        (bool) ((gPlayState->sceneNum >= 0) && (gPlayState->sceneNum <= 24) && CHECK_DUNGEON_ITEM(DUNGEON_COMPASS, gSaveContext.mapIndex)),
-        AssumeGlobal(PauseMapMark_Draw)
-    };
-}
-
-// has an existing override see below.
-SubScreenOpts DrawQuestScreen() { //PAUSE_QUEST 2 - Quest Item Subscreen
-    return SubScreenOpts{
-        AssumeGlobal(KaleidoScope_DrawQuestStatus),
-        (void *) sScreenTransitionTexs[PAUSE_QUEST][gSaveContext.language],
-        gPlayState->pauseCtx.questPageVtx,
-        (void **) sQuestStatusTexs[gSaveContext.language],
-        true,
-        PAUSE_QUEST,
-        G_TF_BILERP
-    };
-}
-
-// without this change, the below screen shows in place of PAUSE_QUEST when randoQuestMode is set
-SubScreenOpts DrawMiscCollectiblesScreen() { //PAUSE_QUEST 2 - Quest Item Subscreen
-    return SubScreenOpts{
-        AssumeGlobal(RandoKaleido_DrawMiscCollectibles),
-        (void *) sScreenTransitionTexs[PAUSE_QUEST][gSaveContext.language],
-        gPlayState->pauseCtx.saveVtx,
-        (void **) sGameOverTexs, //not language dependent?
-        false,
-        PAUSE_QUEST,
-        G_TF_BILERP
-    };
-}
-SubScreenOpts DrawEquipScreen() { //PAUSE_EQUIP 3 - Equipment Subscreen
-    return SubScreenOpts{
-        AssumeGlobal(KaleidoScope_DrawEquipment),
-        //(u16) ((gPlayState->pauseCtx.pageIndex + 4 - index + PAUSE_EQUIP) % 4),
-        (void *) sScreenTransitionTexs[PAUSE_EQUIP][gSaveContext.language],
-        gPlayState->pauseCtx.equipPageVtx,
-        (void **) sEquipmentTexs[gSaveContext.language],
-        true,
-        PAUSE_EQUIP
-    };
-}
-
-SubScreenOpts DrawTrackerScreen() {
-    return SubScreenOpts{
-        DrawTrackerSubScreen,
-        //todo - textures for name and tex
-        (void *) sScreenTransitionTexs[PAUSE_ITEM][gSaveContext.language],
-        gPlayState->pauseCtx.mapPageVtx,
-        (void **) sGameOverTexs,
-        true
-    };
-}
-
-void UpdateEnabledSubScreens() {
-    screens.clear();
-    screens.emplace_back(DrawMapScreen);
-    screens.emplace_back(DrawQuestScreen);
-    screens.emplace_back(DrawEquipScreen);
-    screens.emplace_back(DrawItemScreen);
-    if (IS_RANDO && CVAR_SUBSCREEN_TRACKER_ITEM_ACTIVE) {
-        screens.emplace_back(DrawTrackerScreen);
+bool AddSubScreen(std::add_pointer_t<SubScreenOpts()> screenFunc) {
+    auto index = std::find(screens.begin(), screens.end(), screenFunc);
+    if (index == screens.end()) {
+        screens.emplace_back(screenFunc);
+        return true;
     }
-    if (IS_RANDO) {
-        screens.emplace_back(DrawMiscCollectiblesScreen);
+    return false;
+}
+
+bool RemoveSubScreen(std::add_pointer_t<SubScreenOpts()> screenFunc) {
+    auto index = std::find(screens.begin(), screens.end(), screenFunc);
+    if (index != screens.end()) {
+        screens.erase(index);
+        return true;
     }
-    activeIndex = 3;
-    activePage = 3;
+    return false;
 }
 
 void RegisterChangeSubScreen() {
 
-    COND_HOOK(OnLoadFile, CVAR_SUBSCREEN_ACTIVE, [](int32_t) {
-        UpdateEnabledSubScreens();
-    });
-
     COND_VB_SHOULD(VB_CHANGE_SUBSCREEN, CVAR_SUBSCREEN_ACTIVE, {
+        if (screens.size() < 4) {
+            return;
+        }
         u16 pageIndex = *va_arg(args, u16*);
         *should = true;
         PauseContext* pauseCtx = &gPlayState->pauseCtx;
@@ -250,14 +182,14 @@ void RegisterChangeSubScreen() {
         u16 prev = (pageIndex + 3) % 4;
         u16 off =  (pageIndex + 2) % 4;
 
-        DrawSubScreenAtPage(prev, screens.at(activeIndex > 0 ? activeIndex - 1 : (s32) (screens.size() - 1) ) ());
-        DrawSubScreenAtPage(next, screens.at(activeIndex < screens.size() - 1 ? activeIndex + 1 : 0 ) ());
+        DrawSubScreenAtPage(prev, screens.at(activeIndex > 0 ? activeIndex - 1 : (s32) (screens.size() - 1))());
+        DrawSubScreenAtPage(next, screens.at(activeIndex < screens.size() - 1 ? activeIndex + 1 : 0)());
         if (isIncrement) {
-            DrawSubScreenAtPage(off, screens.at((activeIndex + 2) % screens.size() ) ());
+            DrawSubScreenAtPage(off, screens.at((activeIndex + 2) % screens.size())());
         } else {
-            DrawSubScreenAtPage(off, screens.at((activeIndex + screens.size() - 2) % screens.size() ) ());
+            DrawSubScreenAtPage(off, screens.at((activeIndex + screens.size() - 2) % screens.size())());
         }
-        DrawSubScreenAtPage(curr, screens.at(activeIndex ) ());
+        DrawSubScreenAtPage(curr, screens.at(activeIndex)());
 
         //most of the time this will just be setting it back to the same value. and that's good.
         activePage = pageIndex;
@@ -266,13 +198,13 @@ void RegisterChangeSubScreen() {
     //covers KaleidoScope_DrawInfoPanel and KaleidoScope_UpdateNamePanel.
     //this is responsible for the name panel, L & R button icons (and cursor on those as well i think?)
     COND_VB_SHOULD(VB_CHANGE_SUBSCREEN_INFO_PANEL, CVAR_SUBSCREEN_ACTIVE, {
-        u16 displayedIndex = gPlayState->pauseCtx.pageIndex;
 
-        if (displayedIndex != activeSubScreens[displayedIndex].vanillaIndex) {
+        if (gPlayState->pauseCtx.pageIndex != activeSubScreens[gPlayState->pauseCtx.pageIndex].vanillaIndex) {
             *should = true;
             void (*drawPanelFunc)(PlayState*) = va_arg(args, std::add_pointer_t<void(PlayState*)>);
             //retain vanilla functionality for vanilla screens
-            if (activeSubScreens[displayedIndex].vanillaIndex <= 3) {
+            if (activeSubScreens[gPlayState->pauseCtx.pageIndex].vanillaIndex <= 3) {
+                u16 displayedIndex = gPlayState->pauseCtx.pageIndex;
                 gPlayState->pauseCtx.pageIndex = activeSubScreens[displayedIndex].vanillaIndex;
                 drawPanelFunc(gPlayState);
                 gPlayState->pauseCtx.pageIndex = displayedIndex;
@@ -337,5 +269,4 @@ void RegisterChangeSubScreen() {
     });
 }
 
-static RegisterShipInitFunc enableSubScreenReplacement(RegisterChangeSubScreen, { CVAR_SUBSCREEN_NAME });
-static RegisterShipInitFunc updateEnabledSubScreens(UpdateEnabledSubScreens, { CVAR_SUBSCREEN_NAME, CVAR_SUBSCREEN_TRACKER_ITEM });
+static RegisterShipInitFunc registerChangeSubScreen(RegisterChangeSubScreen, { CVAR_SUBSCREEN_NAME });
