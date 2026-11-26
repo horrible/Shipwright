@@ -389,6 +389,30 @@ typedef enum {
 
     // #### `result`
     // ```c
+    // false
+    // ```
+    // #### `args`
+    // - `pageIndex` (u16)
+    VB_CHANGE_SUBSCREEN,
+
+    // #### `result`
+    // ```c
+    // false
+    // ```
+    // #### `args`
+    // - `std::add_pointer_t<void(PlayState*)>` (Infopanel Draw Function)
+    VB_CHANGE_SUBSCREEN_INFO_PANEL,
+
+    // #### `result`
+    // ```c
+    // false
+    // ```
+    // #### `args`
+    // - `POLY_OPA_DISP` (Gfx*)
+    VB_CHANGE_SUBSCREEN_INFO_LABEL_TEX,
+
+    // #### `result`
+    // ```c
     // gSaveContext.rupees < 200
     // ```
     // #### `args`
@@ -2973,6 +2997,15 @@ typedef enum {
     // #### `args`
     // - `*f32` (sFishOnHandLength)
     VB_SHOULD_CHECK_FOR_FISHING_RECORD,
+
+
+    // #### `result`
+    // ```c
+    // true
+    // ```
+    // #### `args`
+    // - `u8 [9]` (buttonStatus)
+    VB_SHOULD_DIM_BUTTON,
 
     // #### `result`
     // ##### In `Fishing_HandleOwnerDialog` - `LINK_AGE_CHILD`
