@@ -14,6 +14,8 @@
 #include <libultraship/bridge/consolevariablebridge.h>
 #include <soh/ResourceManagerHelpers.h>
 #include "soh/ShipInit.hpp"
+#include "soh/Enhancements/randomizer/ChangeSubScreen.h"
+#include "UIWidgets.hpp"
 
 extern "C" {
 #include "functions.h"
@@ -292,7 +294,48 @@ void SohMenu::AddMenuEnhancements() {
         .CVar(CVAR_ENHANCEMENT("EnableReplaceSubscreen"))
         .Options(CheckboxOptions().Tooltip(
             "Use a reimplimentation of the menu draw that allows for additional subscreens. May impact pause menu-related glitches."));
-
+    AddWidget(path, "Menu Screen order", WIDGET_CUSTOM)
+        .PreFunc([](WidgetInfo& info) {
+            info.isHidden = CVarGetInteger(CVAR_ENHANCEMENT("EnableReplaceSubscreen"), 0) == 0;
+        }).CustomFunction([](WidgetInfo& info) {
+            if (ImGui::BeginTable("ReplaceSubscreenOrder", 5)) {
+                    //ImGui::TableSetupColumn("#");
+                    ImGui::TableSetupColumn("##isDefaultPage");
+                    ImGui::TableSetupColumn("Subscreen");
+                    ImGui::TableSetupColumn("Sort");
+                    //ImGui::TableSetupColumn("Enabled");
+                    ImGui::TableHeadersRow();
+                    u16* defaultIndex = GetDefaultIndex();
+                    bool isEnabled = true;
+                    //todo - add to ship json, read from ship json, persist to ship json, use order from ship json to format on load. maybe an apply button in-game to do it then too
+                    std::vector<std::add_pointer_t<SubScreenOpts()>> screens = *GetSubScreens();
+                    for (int i = 0; i < screens.size(); i++) {
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        std::string name = screens.at(i)().name;
+                        std::string label = "##" + name + "SubscreenEnabled";
+                        //ImGui::Text("%d", i+1); //bold if default
+                        ImGui::TableNextColumn();
+                        ImGui::Text(i == *defaultIndex ? "(o)" : "(_)"); //todo replace with radio button for "default"
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%s", name.c_str()); //bold if default
+                        ImGui::TableNextColumn();
+                        ImGui::Text(i == 0 ? "[x]" : "[^]");
+                        ImGui::SameLine();
+                        ImGui::Text(i == screens.size()-1 ? "[x]" : "[v]");
+                        //add up button (disabled if first), down button (disabled if last) to move entry up/down
+                        ImGui::TableNextColumn();
+                        //ImGui::Checkbox(label.c_str(), CVAR_ENHANCEMENT("EnableReplaceSubscreen"));
+                        //UIWidgets::CVarCheckbox(label.c_str(), CVAR_ENHANCEMENT("EnableReplaceSubscreen"));
+/*                         UIWidgets::CVarCheckbox(
+                                label.c_str(), //need to link per-screen
+                                CVAR_ENHANCEMENT("EnableReplaceSubscreen"),
+                                CheckboxOptions().Tooltip("Speak to Navi with L but enter First-Person Camera with C-Up.")); */
+                        //display cvar checkbox & label for this screen so they can be turned on/off in one spot
+                    }
+                    ImGui::EndTable();
+                }
+        });
     path.column = SECTION_COLUMN_2;
     AddWidget(path, "Controls", WIDGET_SEPARATOR_TEXT);
     AddWidget(path, "Answer Navi Prompt with L Button", WIDGET_CVAR_CHECKBOX)

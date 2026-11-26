@@ -11,6 +11,7 @@
 
 extern "C" {
 #include "src/overlays/misc/ovl_kaleido_scope/z_kaleido_scope.h"
+#include <algorithm>
 extern "C" Gfx* KaleidoScope_DrawPageSections(Gfx* gfx, Vtx* vertices, void** textures);
 extern "C" void KaleidoScope_UpdateNamePanel(PlayState* play);
 extern PlayState* gPlayState;
@@ -40,7 +41,8 @@ extern SaveContext gSaveContext;
 
 static SubScreenOpts activeSubScreens[4];
 static std::vector<std::add_pointer_t<SubScreenOpts()>> screens; //this code assumes that screens.size() will be 4 at a minimum, so if you change it to be less, keep that in mind.
-static s32 activeIndex = 3; //index = screen index, vanilla starts on PAUSE_EQUIP (page 3)
+static u16 defaultIndex = 2;
+static s32 activeIndex; //index = screen index, vanilla starts on PAUSE_EQUIP (page 3)
 static u16 activePage; //page = 0-3 active face saved from previous frame
 
 void DrawSubScreenAtPage (u16 drawPage, SubScreenOpts opts) {
@@ -130,17 +132,34 @@ std::function<void()> AssumeGlobal(void (*wrappedFunc)(PlayState*)) {
     };
 }
 
-bool AddSubScreen(std::add_pointer_t<SubScreenOpts()> screenFunc) {
-    auto index = std::find(screens.begin(), screens.end(), screenFunc);
-    if (index == screens.end()) {
-        screens.emplace_back(screenFunc);
+u16* GetDefaultIndex() {
+    return &defaultIndex;
+}
+
+std::vector<std::add_pointer_t<SubScreenOpts()>>* GetSubScreens(){
+    return &screens;
+}
+
+bool SwapSubScreen(int pos, std::add_pointer_t<SubScreenOpts()> screen) {
+    auto index = std::find(screens.begin(), screens.end(), screen);
+    if (index != screens.end()) {
+        iter_swap(screens.begin() + pos, index);
         return true;
     }
     return false;
 }
 
-bool RemoveSubScreen(std::add_pointer_t<SubScreenOpts()> screenFunc) {
-    auto index = std::find(screens.begin(), screens.end(), screenFunc);
+bool AddSubScreen(std::add_pointer_t<SubScreenOpts()> screen) {
+    auto index = std::find(screens.begin(), screens.end(), screen);
+    if (index == screens.end()) {
+        screens.emplace_back(screen);
+        return true;
+    }
+    return false;
+}
+
+bool RemoveSubScreen(std::add_pointer_t<SubScreenOpts()> screen) {
+    auto index = std::find(screens.begin(), screens.end(), screen);
     if (index != screens.end()) {
         screens.erase(index);
         return true;
@@ -149,6 +168,11 @@ bool RemoveSubScreen(std::add_pointer_t<SubScreenOpts()> screenFunc) {
 }
 
 void RegisterChangeSubScreen() {
+
+    COND_HOOK(OnLoadFile, CVAR_SUBSCREEN_ACTIVE, [](int32_t) {
+        activeIndex = defaultIndex;
+        activePage = defaultIndex % 4;
+    });
 
     COND_VB_SHOULD(VB_CHANGE_SUBSCREEN, CVAR_SUBSCREEN_ACTIVE, {
         if (screens.size() < 4) {
@@ -223,10 +247,10 @@ void RegisterChangeSubScreen() {
         //it'd probably be more accurate to do based on the actual screens vector instead, but that's probably much slower
         if (cursorPos == PAUSE_CURSOR_PAGE_LEFT) {
             *should = true;
-            *gfx = KaleidoScope_QuadTextureIA8(*gfx, activeSubScreens[(activePage + 3) % 4].name, 128, 16, 0);
+            *gfx = KaleidoScope_QuadTextureIA8(*gfx, activeSubScreens[(activePage + 3) % 4].nameTex, 128, 16, 0);
         } else if (cursorPos == PAUSE_CURSOR_PAGE_RIGHT) {
             *should = true;
-            *gfx = KaleidoScope_QuadTextureIA8(*gfx, activeSubScreens[(activePage + 1) % 4].name, 128, 16, 0);
+            *gfx = KaleidoScope_QuadTextureIA8(*gfx, activeSubScreens[(activePage + 1) % 4].nameTex, 128, 16, 0);
         }
     });
 

@@ -16,7 +16,11 @@ extern PlayState* gPlayState;
 #define CVAR_SUBSCREEN_ACTIVE (bool) CVarGetInteger(CVAR_SUBSCREEN_NAME, 0)
 
 SubScreenOpts ItemSubScreenOpts() { //PAUSE_ITEM 0 - Item Subscreen
+    if (gPlayState ==  nullptr) {
+        return SubScreenOpts{ "Item" };
+    }
     return SubScreenOpts{
+        "Item",
         AssumeGlobal(KaleidoScope_DrawItemSelect),
         (void *) sScreenTransitionTexs[PAUSE_ITEM][gSaveContext.language],
         gPlayState->pauseCtx.itemPageVtx,
@@ -29,7 +33,11 @@ SubScreenOpts ItemSubScreenOpts() { //PAUSE_ITEM 0 - Item Subscreen
 }
 
 SubScreenOpts MapSubScreenOpts() { // PAUSE_MAP 1 - Map Subscreen - can be both dungeon and world
+    if (gPlayState ==  nullptr) {
+        return SubScreenOpts{ "Map" };
+    }
     return SubScreenOpts{
+        "Map",
         //todo - fix dungeon list
         AssumeGlobal((gPlayState->sceneNum >= 0) && (gPlayState->sceneNum <= 24) ? KaleidoScope_DrawDungeonMap : KaleidoScope_DrawWorldMap),
         (void *) sScreenTransitionTexs[PAUSE_MAP][gSaveContext.language],
@@ -45,7 +53,11 @@ SubScreenOpts MapSubScreenOpts() { // PAUSE_MAP 1 - Map Subscreen - can be both 
 
 // has an existing override see below.
 SubScreenOpts QuestSubScreenOpts() { //PAUSE_QUEST 2 - Quest Item Subscreen
+    if (gPlayState ==  nullptr) {
+        return SubScreenOpts{ "Quest" };
+    }
     return SubScreenOpts{
+        "Quest",
         AssumeGlobal(KaleidoScope_DrawQuestStatus),
         (void *) sScreenTransitionTexs[PAUSE_QUEST][gSaveContext.language],
         gPlayState->pauseCtx.questPageVtx,
@@ -59,7 +71,11 @@ SubScreenOpts QuestSubScreenOpts() { //PAUSE_QUEST 2 - Quest Item Subscreen
 //not technically vanilla but /shrug close enough
 // when this reimpl is disabled, this screen shows in place of PAUSE_QUEST when randoQuestMode is set
 SubScreenOpts MiscCollectiblesSubScreenOpts() { //PAUSE_QUEST 2 - Quest Item Subscreen
+    if (gPlayState ==  nullptr) {
+        return SubScreenOpts{ "Misc Collectibles" };
+    }
     return SubScreenOpts{
+        "Misc Collectibles",
         AssumeGlobal(RandoKaleido_DrawMiscCollectibles),
         (void *) sScreenTransitionTexs[PAUSE_QUEST][gSaveContext.language],
         gPlayState->pauseCtx.saveVtx,
@@ -71,7 +87,11 @@ SubScreenOpts MiscCollectiblesSubScreenOpts() { //PAUSE_QUEST 2 - Quest Item Sub
 }
 
 SubScreenOpts EquipSubScreenOpts() { //PAUSE_EQUIP 3 - Equipment Subscreen
+    if (gPlayState ==  nullptr) {
+        return SubScreenOpts{ "Equipment" };
+    }
     return SubScreenOpts{
+        "Equipment",
         AssumeGlobal(KaleidoScope_DrawEquipment),
         //(u16) ((gPlayState->pauseCtx.pageIndex + 4 - index + PAUSE_EQUIP) % 4),
         (void *) sScreenTransitionTexs[PAUSE_EQUIP][gSaveContext.language],
